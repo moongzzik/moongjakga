@@ -2132,7 +2132,7 @@ function byokSheet(provArg){
     <div class="seg" style="margin-top:6px"><button data-pv="gemini" class="${g?'on':''}">Gemini (구글)</button><button data-pv="claude" class="${g?'':'on'}">Claude</button></div>
     <details style="margin-top:10px" ${same?'':'open'}><summary class="small" style="color:var(--accent);cursor:pointer">${g?'구글':'Claude'} 키 만드는 법</summary>
       <div class="note">${g?`1. <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> → 구글 계정 로그인<br>2. <b>Create API key</b> → 키 복사<br>3. 아래 칸에 붙여 넣기<br><span class="muted">무료 등급으로 시작할 수 있어요(사용 한도 있음). 무료 등급은 입력 내용이 구글 모델 개선에 쓰일 수 있어요.</span>`
-        :`1. <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> → 가입·로그인<br>2. Billing에서 크레딧 충전(유료)<br>3. API Keys → <b>Create Key</b> → 키 복사 → 아래 칸에 붙여 넣기`}</div></details>
+        :`1. <a href="https://platform.claude.com/settings/keys" target="_blank" rel="noopener">platform.claude.com</a> → 가입·로그인<br>2. Billing → <b>Buy credits</b>로 크레딧 충전(선불)<br>3. API keys → <b>Create key</b> → 키 복사 → 아래 칸에 붙여 넣기`}</div></details>
     <label class="field"><span>${same?'새 키 (비워 두면 지금 키 그대로)':(g?'Gemini':'Claude')+' API 키'}</span>
       <div style="display:flex;gap:6px"><input data-key type="password" autocomplete="off" spellcheck="false" placeholder="${same?'새 키를 붙여 넣으면 바뀌어요':(g?'AIza...':'sk-ant-...')}" style="flex:1"><button class="btn sm" data-eye style="height:44px">보기</button></div></label>
     <label class="field"><span>모델 (비워 두면 기본값: ${esc(BYOK_DEF[prov])})</span><input data-model autocomplete="off" spellcheck="false" placeholder="${esc(BYOK_DEF[prov])}" value="${same?esc(cur.model||''):''}"></label>
