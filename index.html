@@ -313,6 +313,14 @@ html,body{background-color:var(--bg);background-image:var(--grain),var(--fiber);
 .install-pill{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 12px;border-radius:99px;background:var(--accent);color:var(--accent-ink);font-size:12.5px;font-weight:500}
 .install-pill::before{content:'';width:10px;height:10px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4v12M6 11l6 6 6-6M5 21h14'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4v12M6 11l6 6 6-6M5 21h14'/%3E%3C/svg%3E") center/contain no-repeat}
 .install-pill[hidden]{display:none}
+.ai-panel{position:fixed;left:0;right:0;bottom:calc(var(--safe-b) + 66px);z-index:58;padding:0 14px;animation:up .18s ease-out}
+.ai-panel[hidden]{display:none}
+.ai-panel .in{max-width:612px;margin:0 auto;background:var(--surface);border:1px solid var(--line2);border-radius:14px;padding:13px 15px;box-shadow:0 10px 30px rgba(0,0,0,.14)}
+.ai-panel .k{font-size:13px;font-weight:700;display:flex;justify-content:space-between;align-items:center;color:var(--accent)}
+.ai-panel .k.err{color:var(--fix)} .ai-panel .k.ok{color:var(--good)}
+.ai-panel p{margin:6px 0 0;font-size:14px;line-height:1.6}
+body:not(.editing) .ai-panel{bottom:calc(var(--safe-b) + 74px)}
+.ed-wrap ~ [data-area] .loading,.ed-wrap ~ [data-area] .note{display:none}
 
 
 </style>
@@ -325,6 +333,7 @@ html,body{background-color:var(--bg);background-image:var(--grain),var(--fiber);
 <div class="weave-bar" id="weaveBar" hidden></div>
 <button class="fab" id="fab" hidden aria-label="새 글"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
 <div class="ed-comment" id="edComment" hidden></div>
+<div class="ai-panel" id="aiPanel" hidden></div>
 <nav class="ed-tools" id="edTools" hidden></nav>
 <nav class="bottom"><div class="in"><a href="#home" data-tab="home"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>오늘</a><a href="#write" data-tab="write"><svg viewBox="0 0 24 24"><path d="M16.5 3.5l4 4L8 20H4v-4z"/><path d="M14 6l4 4"/></svg>쓰기</a><a href="#learn" data-tab="learn"><svg viewBox="0 0 24 24"><path d="M3 5.5C6 4 9 4 12 6c3-2 6-2 9-.5V19c-3-1.5-6-1.5-9 .5-3-2-6-2-9-.5z"/><path d="M12 6v13.5"/></svg>배우기</a><a href="#me" data-tab="me"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>나</a></div></nav>
 <script>
@@ -938,7 +947,7 @@ ${newPart.slice(-2000)}
 """
 JSON으로만 답하세요: {"kind":"질문|방향|독자 반응","focus":"새로 쓴 부분에서 주목한 원문 구절(30자 이내, 없으면 빈 문자열)","text":"작가에게 건넬 말 2~3문장","next":"다음 턴에 작가가 써 볼 것 한 줄(문장 예시 금지)"}`;
   try{
-    const d=await askAI(prompt,{tier:'quick'});
+    const d=await askAI(prompt,{tier:'quick',nocache:true});
     const ex=newPart.trim(); (w.collab||(w.collab=[])).push({role:'me', at:Date.now(), chars:charsNoSp(w.body), len:w.body.length, excerpt: ex.length>80? '… '+ex.slice(-80):ex});
     w.collab.push({role:'ai', at:Date.now(), kind:d.kind, focus:d.focus, text:d.text, next:d.next});
     if(w.collab.length>40) w.collab.splice(0,2);
@@ -1479,7 +1488,7 @@ function go(tab, sub, seg){
   if(location.hash!=='#'+tab){ S.tab=null; S._pendingSub=sub||null; location.hash=tab; } else { S.sub=sub||null; render(); }
 }
 function render(){
-  const v=$('#view'); clearTimers(); $('#weaveBar').hidden=true; document.body.classList.remove('editing'); $('#fab').hidden=true; $('#edTools').hidden=true; hideComment();
+  const v=$('#view'); clearTimers(); $('#weaveBar').hidden=true; document.body.classList.remove('editing'); $('#fab').hidden=true; $('#edTools').hidden=true; hideComment(); if(!AI_CTL||AI_CTL.signal.aborted||!$('#aiPanel .spin')) { if(!S.keepPanel) aiPanel(null); }
   const t=S.tab;
   if(t==='home'){ v.innerHTML=homeHTML(); bindHome(v); }
   else if(t==='write'){
@@ -1799,7 +1808,7 @@ function openCollabSheet(w,v){
   sheet(`<h3>협동 글쓰기</h3><p class="small muted">내가 쓰고 넘기면, AI 동료가 질문이나 방향을 하나 돌려줘요. 문장은 언제나 내가 씁니다.</p>
     <div>${cs.length?cs.map(collabTurnHTML).join(''):'<div class="empty" style="padding:20px">아직 주고받은 턴이 없어요.</div>'}</div>
     <button class="btn primary block" data-turn style="margin-top:10px">지금까지 쓴 부분 넘기기</button>`,
-  (el,close)=>{ const tb=$('[data-turn]',el); tb.onclick=async()=>{ const before=(w.collab||[]).length; close(); await collabTurn(w,v); if((w.collab||[]).length>before){ openCollabSheet(w,v); } };
+  (el,close)=>{ const tb=$('[data-turn]',el); tb.onclick=async()=>{ const before=(w.collab||[]).length; close(); S.aiLabel='AI 동료가 읽는 중'; await collabTurn(w,v); if((w.collab||[]).length>before){ openCollabSheet(w,v); } };
     setTimeout(()=>{ el.scrollTop=el.scrollHeight; },30); });
 }
 function feedbackHTML(f,open,idx,w){
@@ -1828,7 +1837,8 @@ function openFeedbackSheet(w,v){
     ${fs.length?`<h2>받은 피드백</h2>${fs.map((f,i)=>({f,i})).reverse().map(({f,i},n)=>feedbackHTML(f,n===0,i,w)).join('')}`:''}`,
   (el,close)=>{
     el.querySelectorAll('[data-p]').forEach(b=>b.onclick=async()=>{ if(charsNoSp(w.body)<20) return toast('피드백을 받으려면 조금 더 써 주세요 (20자 이상)'); close(); S.fbIndex=null;
-      const before=(w.feedbacks||[]).length; await runFeedback(w,b.dataset.p,v); if((w.feedbacks||[]).length>before) toast('밑줄을 눌러 코멘트를 보세요',3000); });
+      S.aiLabel=`${PERSONAS[b.dataset.p].name}이(가) 원고를 읽는 중`;
+      const before=(w.feedbacks||[]).length; await runFeedback(w,b.dataset.p,v); if((w.feedbacks||[]).length>before) showFeedbackResult(S.writings[w.id]||w); });
     const mp=$('[data-morep]',el); if(mp) mp.onclick=()=>{ $('[data-rest]',el).hidden=false; mp.remove(); };
     el.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{ const bd=b.nextElementSibling; bd.hidden=!bd.hidden; b.lastElementChild.textContent=bd.hidden?'펼치기':'접기'; });
     el.querySelectorAll('[data-show]').forEach(b=>b.onclick=()=>{ S.fbIndex=+b.dataset.show; S.fbFor=w.id; S.marksOff=false; close(); render(); toast('본문의 밑줄을 눌러 보세요'); });
@@ -1920,6 +1930,75 @@ function updateInstallBtn(){ const b=$('#installBtn'); if(!b) return; b.hidden=i
 window.addEventListener('appinstalled',()=>{ S.installEvt=null; const b=$('#installBtn'); if(b) b.hidden=true; toast('설치됐어요. 홈 화면에서 뭉작가를 열어 보세요'); });
 window.addEventListener('beforeinstallprompt',()=>setTimeout(updateInstallBtn,0));
 document.addEventListener('DOMContentLoaded',()=>{ const b=$('#installBtn'); if(b) b.onclick=onInstallClick; updateInstallBtn(); });
+
+
+/* ============ [수정] AI 진행 상태 패널 · 결과 카드 · 오류 안내 ============ */
+let AI_CTL=null;
+function aiPanel(html, opts={}){
+  const c=$('#aiPanel'); if(!c) return;
+  if(!html){ c.hidden=true; c.innerHTML=''; return; }
+  c.hidden=false; c.innerHTML=`<div class="in">${html}</div>`;
+  const x=$('[data-aix]',c); if(x) x.onclick=()=>{ if(opts.onStop) opts.onStop(); aiPanel(null); };
+}
+function aiErrorMsg(e){
+  const c=e&&e.code;
+  if(c==='no_ai') return IS_PAGES?'설치형 앱(GitHub)에서는 AI를 부를 수 없어요. AI 도움은 claude.ai 버전 뭉작가에서 받을 수 있어요.':'이 화면에서는 AI를 쓸 수 없어요. claude.ai 앱이나 웹에서 뭉작가를 열어 주세요.';
+  if(c==='not_granted') return 'AI 사용이 허용되지 않았어요. 처음 쓸 때 뜨는 허용 창에서 "허용"을 눌러야 해요. 페이지를 새로 열면 다시 물어봐요.';
+  if(c==='session_expired') return 'claude.ai 로그인이 풀렸어요. 다시 로그인한 뒤 시도해 주세요.';
+  if(c==='rate_limited') return '지금 AI 사용량이 많거나 한도에 닿았어요. 잠시 뒤 다시 시도해 주세요.';
+  if(c==='sampling_disabled') return '이 계정에서는 AI 기능을 쓸 수 없어요.';
+  if(c==='refused') return 'AI가 이 글에 답하지 않았어요. 내용을 조금 바꿔 다시 시도해 주세요.';
+  if(c==='invalid_json'||c==='empty_completion') return 'AI 답이 중간에 깨졌어요. 한 번만 다시 눌러 주세요.';
+  if(c==='prompt_too_large') return '글이 너무 길어요. 일부만 골라 다시 시도해 주세요.';
+  if(c==='cancelled') return '중지했어요.';
+  return 'AI 연결이 잠깐 끊겼어요. 다시 시도해 주세요.';
+}
+function carryCode(w){
+  const data={app:'moongjakga', v:1, at:Date.now(), profile:{}, writings:{[w.id]:w}, quotes:{}, ideas:{}, projects:{}};
+  return 'MJK1:'+btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+}
+function showAiError(e){
+  if(e&&e.code==='cancelled'){ aiPanel(null); return; }
+  const w=S.tab==='write'&&S.sub&&S.writings[S.sub];
+  const carry=e&&e.code==='no_ai'&&IS_PAGES&&w;
+  aiPanel(`<div class="k err"><span>AI 도움을 받지 못했어요</span><button data-aix class="small muted">닫기</button></div>
+    <p>${esc(aiErrorMsg(e))}</p>
+    ${carry?`<a class="btn primary block" data-carry href="${ARTIFACT_URL}" target="_blank" rel="noopener" style="text-decoration:none;margin-top:10px">이 글 가지고 claude.ai로 가기</a>
+      <p class="small muted" style="margin:8px 0 0">글이 복사돼요. claude.ai 뭉작가 → 나 → <b>백업 불러오기</b>에 붙여 넣으면 이 글이 그대로 열려요.</p>`:''}`);
+  const a=$('#aiPanel [data-carry]'); if(a) a.addEventListener('click',()=>{ copyText(carryCode(w)).then(ok=>toast(ok?'글을 복사했어요':'복사 실패: 나 → 백업 코드 복사를 써 주세요')); });
+}
+async function askAI(prompt, opts={}){
+  const label=opts.label||S.aiLabel||'AI가 생각하는 중'; S.aiLabel=null;
+  const ai=await getAI();
+  if(!ai){ const e={code:'no_ai'}; showAiError(e); throw e; }
+  AI_CTL=new AbortController(); const ctl=AI_CTL; const t0=Date.now(); let chars=0, first=!S.aiUsedOnce;
+  const draw=()=>{ const sec=Math.floor((Date.now()-t0)/1000);
+    aiPanel(`<div class="k"><span><span class="spin" style="display:inline-block;vertical-align:-3px;margin-right:8px"></span>${esc(label)}</span><button data-aix class="small muted">중지</button></div>
+      <p class="small" style="margin-top:6px">${chars?`답을 쓰는 중 · ${chars.toLocaleString()}자`:sec<3&&first?'처음이면 AI 사용 허용 창이 떠요. "허용"을 눌러 주세요.':`생각하는 중 · ${sec}초`}</p>
+      <div class="small muted">${chars?'':'보통 10~40초, 글이 길면 1분 넘게 걸릴 수 있어요.'}</div>`, {onStop:()=>ctl.abort()}); };
+  draw(); const tick=setInterval(draw,1000);
+  const o={modelTier:opts.tier||'default', signal:ctl.signal, onText:({text})=>{ chars=text.length; }};
+  if(opts.images) o.images=opts.images;
+  if(opts.nocache) o.cache=false;
+  try{
+    let data;
+    if(typeof ai.json==='function'){
+      try{ data=await ai.json(prompt,o); }
+      catch(e){ if(e&&e.code==='capability_removed'){ const r=await ai(prompt,o); data=parseJSON(r.text||''); } else throw e; }
+    } else { const r=await ai(prompt,o); data=parseJSON(r.text||''); }
+    if(!data||typeof data!=='object') throw {code:'invalid_json'};
+    S.aiUsedOnce=true; clearInterval(tick); aiPanel(null); return data;
+  }catch(e){ clearInterval(tick); const err=(e&&e.code)?e:{code:'invalid_json'}; showAiError(err); throw err; }
+}
+function showFeedbackResult(w){
+  const f=(w.feedbacks||[]).slice(-1)[0]; if(!f) return; const d=f.data||{}; const P=PERSONAS[f.persona]||{name:'AI'};
+  const n=(d.strengths||[]).length+(d.improvements||[]).length;
+  aiPanel(`<div class="k ok"><span>${esc(P.name)}의 피드백이 도착했어요</span><button data-aix class="small muted">닫기</button></div>
+    ${d.summary?`<p class="serif" style="font-size:15px;margin-top:6px">${esc(d.summary)}</p>`:''}
+    ${d.mission?`<p class="small" style="margin-top:6px"><b style="color:var(--accent)">퇴고 미션</b> ${esc(d.mission)}</p>`:''}
+    <div style="display:flex;gap:8px;margin-top:10px"><button class="btn sm primary" data-all>전체 보기</button><span class="small muted" style="align-self:center">본문 밑줄 ${n}곳 · 눌러서 코멘트</span></div>`);
+  const a=$('#aiPanel [data-all]'); if(a) a.onclick=()=>{ aiPanel(null); openFeedbackSheet(w,$('#view')); };
+}
 
 /* ============ 시작 ============ */
 (async function start(){
