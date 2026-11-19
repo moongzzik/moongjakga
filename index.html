@@ -555,7 +555,7 @@ function fitDoc(w){
 function markDay(){ const d=today(), days=S.profile.days||(S.profile.days=[]); if(!days.includes(d)){ days.push(d); if(days.length>120) days.shift(); Store.saveProfile(); } }
 
 /* ============ AI ============ */
-async function getAI(){
+async function getAI_v1(){
   if(!S.aiPromise) S.aiPromise=(async()=>{ try{ if(!(window.claude&&claude.use)) return null; const ai=await claude.use('sample'); if(ai&&ai.limits){ try{ const l=await ai.limits(); S.aiImages=!!(l&&l.images); }catch(e){} } return ai; }catch(e){ return null; } })();
   return S.aiPromise;
 }
@@ -1874,6 +1874,7 @@ function styleHTML(){
   ${hist.length>1?`<div class="small muted" style="margin-top:14px">지난 분석 · ${hist.slice(0,-1).reverse().map(h=>`${fmtDate(h.at)} ${esc((h.keywords||[]).slice(0,3).join('·'))}`).join(' / ')}</div>`:''}
   <h2>설정</h2>
   <div class="rows">
+    ${IS_PAGES?`<button class="set-row" data-byok>AI 연결<span>${(()=>{const c=byokGet(); return c&&c.key?(c.provider==='gemini'?'Gemini 연결됨':'Claude 연결됨'):'키 넣기'})()}</span></button>`:''}
     <button class="set-row" data-bk>백업 코드 복사<span>다른 기기·버전으로 옮기기</span></button>
     ${IS_PAGES?'<button class="set-row" data-bkf>백업 파일로 저장<span>.txt</span></button>':''}
     <button class="set-row" data-rs>백업 불러오기<span></span></button>
@@ -1897,6 +1898,7 @@ function bindStyle(v){
   const ab=$('[data-about]',v); if(ab) ab.onclick=()=>{ S.sub='about'; render(); };
   bindAppTools(v);
   const i2=$('[data-inst2]',v); if(i2) i2.onclick=onInstallClick;
+  const by=$('[data-byok]',v); if(by) by.onclick=byokSheet;
   bindStyle_v1(v);
 }
 
@@ -1963,8 +1965,10 @@ function showAiError(e){
   const carry=e&&e.code==='no_ai'&&IS_PAGES&&w;
   aiPanel(`<div class="k err"><span>AI 도움을 받지 못했어요</span><button data-aix class="small muted">닫기</button></div>
     <p>${esc(aiErrorMsg(e))}</p>
-    ${carry?`<a class="btn primary block" data-carry href="${ARTIFACT_URL}" target="_blank" rel="noopener" style="text-decoration:none;margin-top:10px">이 글 가지고 claude.ai로 가기</a>
+    ${e&&['no_ai','bad_key','bad_model','no_credit'].includes(e.code)&&IS_PAGES?`<button class="btn primary block" data-byok2 style="margin-top:10px">AI 연결 설정 (구글·Claude 키)</button>`:''}
+    ${carry?`<a class="btn ${IS_PAGES?'':'primary'} block" data-carry href="${ARTIFACT_URL}" target="_blank" rel="noopener" style="text-decoration:none;margin-top:10px">또는 이 글 가지고 claude.ai로 가기</a>
       <p class="small muted" style="margin:8px 0 0">글이 복사돼요. claude.ai 뭉작가 → 나 → <b>백업 불러오기</b>에 붙여 넣으면 이 글이 그대로 열려요.</p>`:''}`);
+  const bz=$('#aiPanel [data-byok2]'); if(bz) bz.onclick=()=>{ aiPanel(null); byokSheet(); };
   const a=$('#aiPanel [data-carry]'); if(a) a.addEventListener('click',()=>{ copyText(carryCode(w)).then(ok=>toast(ok?'글을 복사했어요':'복사 실패: 나 → 백업 코드 복사를 써 주세요')); });
 }
 async function askAI(prompt, opts={}){
@@ -1998,6 +2002,97 @@ function showFeedbackResult(w){
     ${d.mission?`<p class="small" style="margin-top:6px"><b style="color:var(--accent)">퇴고 미션</b> ${esc(d.mission)}</p>`:''}
     <div style="display:flex;gap:8px;margin-top:10px"><button class="btn sm primary" data-all>전체 보기</button><span class="small muted" style="align-self:center">본문 밑줄 ${n}곳 · 눌러서 코멘트</span></div>`);
   const a=$('#aiPanel [data-all]'); if(a) a.onclick=()=>{ aiPanel(null); openFeedbackSheet(w,$('#view')); };
+}
+
+
+/* ============ [추가] 내 API 키로 AI 쓰기 (설치형 앱 전용: Gemini · Claude) ============ */
+const BYOK_KEY='mjk.ai';
+const BYOK_DEF={gemini:'gemini-flash-latest', claude:'claude-sonnet-5-5'};
+const BYOK_QUICK={gemini:'gemini-flash-latest', claude:'claude-haiku-5-5'};
+function byokGet(){ try{ return JSON.parse(localStorage.getItem(BYOK_KEY)||'null'); }catch(e){ return null; } }
+function byokSet(v){ try{ v?localStorage.setItem(BYOK_KEY,JSON.stringify(v)):localStorage.removeItem(BYOK_KEY); }catch(e){} S.aiPromise=null; }
+async function blobB64(b){ const buf=new Uint8Array(await b.arrayBuffer()); let s=''; for(let i=0;i<buf.length;i+=0x8000) s+=String.fromCharCode.apply(null,buf.subarray(i,i+0x8000)); return {data:btoa(s), type:b.type||'image/jpeg'}; }
+function byokAdapter(cfg){
+  const call=async(prompt,o={})=>{
+    const imgs=o.images?await Promise.all([].concat(o.images).map(blobB64)):[];
+    const tier=o.modelTier||'default';
+    const model=(cfg.model&&cfg.model.trim())||(tier==='quick'?BYOK_QUICK:BYOK_DEF)[cfg.provider];
+    const text=prompt+'\n\n(반드시 JSON만 출력하세요.)';
+    let res;
+    try{
+      if(cfg.provider==='gemini'){
+        res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{method:'POST',signal:o.signal,
+          headers:{'content-type':'application/json','x-goog-api-key':cfg.key},
+          body:JSON.stringify({contents:[{role:'user',parts:[...imgs.map(i=>({inline_data:{mime_type:i.type,data:i.data}})),{text}]}],generationConfig:{responseMimeType:'application/json',maxOutputTokens:16384}})});
+      } else {
+        res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',signal:o.signal,
+          headers:{'content-type':'application/json','x-api-key':cfg.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+          body:JSON.stringify({model,max_tokens:4096,messages:[{role:'user',content:[...imgs.map(i=>({type:'image',source:{type:'base64',media_type:i.type,data:i.data}})),{type:'text',text}]}]})});
+      }
+    }catch(e){ if(e&&e.name==='AbortError') throw {code:'cancelled'}; throw {code:'upstream_error',message:String(e)}; }
+    let j=null; try{ j=await res.json(); }catch(e){}
+    if(!res.ok){ const m=(j&&(j.error&&(j.error.message||j.error.type)))||res.status;
+      if(res.status===401||res.status===403||/API key|api_key|authentication|PERMISSION/i.test(String(m))) throw {code:'bad_key',message:String(m)};
+      if(res.status===404||/not found|model/i.test(String(m))&&res.status===400) throw {code:'bad_model',message:String(m)};
+      if(res.status===429) throw {code:'rate_limited',message:String(m)};
+      if(res.status===402||/credit|billing|balance/i.test(String(m))) throw {code:'no_credit',message:String(m)};
+      throw {code:'upstream_error',message:String(m)}; }
+    let out='';
+    if(cfg.provider==='gemini'){ const c=(j.candidates||[])[0]; out=((c&&c.content&&c.content.parts)||[]).filter(p=>!p.thought).map(p=>p.text||'').join(''); if(!out&&c&&c.finishReason==='SAFETY') throw {code:'refused'}; }
+    else out=(j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    if(!out.trim()) throw {code:'empty_completion'};
+    o.onText&&o.onText({text:out,delta:out});
+    return {text:out, truncated:false};
+  };
+  const fn=(p,o)=>call(p,o);
+  fn.json=async(p,o)=>{ const r=await call(p,o); try{ return parseJSON(r.text); }catch(e){ throw {code:'invalid_json',text:r.text}; } };
+  fn.limits=async()=>({maxPromptBytes:262144, images:{maxCount:5}});
+  fn.byok=cfg.provider;
+  return fn;
+}
+async function getAI(){
+  if(!S.aiPromise) S.aiPromise=(async()=>{
+    try{ if(window.claude&&claude.use){ const ai=await claude.use('sample'); if(ai){ if(ai.limits){ try{ const l=await ai.limits(); S.aiImages=!!(l&&l.images); }catch(e){} } return ai; } } }catch(e){}
+    const cfg=byokGet(); if(cfg&&cfg.key){ S.aiImages=true; return byokAdapter(cfg); }
+    return null;
+  })();
+  return S.aiPromise;
+}
+const _aiErrorMsg0=aiErrorMsg;
+aiErrorMsg=function(e){
+  const c=e&&e.code;
+  if(c==='no_ai'&&IS_PAGES) return '아직 AI가 연결되지 않았어요. 나 → AI 연결에서 Gemini(구글)나 Claude API 키를 넣으면 이 앱에서 바로 AI 도움을 받을 수 있어요.';
+  if(c==='bad_key') return 'API 키가 맞지 않아요. 나 → AI 연결에서 키를 다시 확인해 주세요.';
+  if(c==='bad_model') return '모델 이름을 찾지 못했어요. 나 → AI 연결 → 모델 칸을 비워 기본값으로 두세요.';
+  if(c==='no_credit') return 'API 크레딧(잔액)이 부족해요. 키를 만든 사이트에서 결제 상태를 확인해 주세요.';
+  if(c==='rate_limited'&&byokGet()) return '무료 한도나 분당 요청 수에 닿았어요. 1~2분 뒤 다시 시도해 주세요.';
+  return _aiErrorMsg0(e);
+};
+function byokSheet(){
+  const cur=byokGet()||{provider:'gemini',key:'',model:''}; let prov=cur.provider;
+  const draw=(el,close)=>{
+    const g=prov==='gemini';
+    el.innerHTML=`<div class="grab"></div><h3>AI 연결</h3>
+    <p class="small muted">이 설치형 앱에서 AI 피드백·협동·막힘·사진 인식·문체 분석을 쓰려면 API 키를 한 번 넣어 주세요. 키는 <b>이 폰 안에만</b> 저장되고, 백업 코드에도 들어가지 않아요.</p>
+    <div class="seg" style="margin-top:10px"><button data-pv="gemini" class="${g?'on':''}">Gemini (구글)</button><button data-pv="claude" class="${g?'':'on'}">Claude</button></div>
+    <div class="note" style="margin-top:12px">${g?`<b>구글 키 만들기</b><br>1. <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> 열기 → 구글 계정 로그인<br>2. <b>Create API key</b> → 키 복사<br>3. 아래 칸에 붙여 넣기<br><span class="muted">무료 등급으로 시작할 수 있어요(하루·분당 사용 한도 있음). 무료 등급은 입력 내용이 구글 모델 개선에 쓰일 수 있어요.</span>`
+      :`<b>Claude 키 만들기</b><br>1. <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> 열기 → 가입·로그인<br>2. Billing에서 크레딧 충전(유료)<br>3. API Keys → <b>Create Key</b> → 키 복사 → 아래 칸에 붙여 넣기<br><span class="muted">피드백 한 번에 보통 몇십 원 정도예요.</span>`}</div>
+    <label class="field"><span>${g?'Gemini':'Claude'} API 키</span><input data-key type="password" autocomplete="off" spellcheck="false" placeholder="${g?'AIza...':'sk-ant-...'}" value="${cur.provider===prov?esc(cur.key||''):''}"></label>
+    <label class="field"><span>모델 (비워 두면 기본값: ${esc(BYOK_DEF[prov])})</span><input data-model autocomplete="off" spellcheck="false" placeholder="${esc(BYOK_DEF[prov])}" value="${cur.provider===prov?esc(cur.model||''):''}"></label>
+    <div data-msg class="small" style="min-height:20px;margin:4px 0"></div>
+    <div style="display:flex;gap:8px"><button class="btn block" data-test>연결 테스트</button><button class="btn primary block" data-save>저장</button></div>
+    ${byokGet()?'<button class="btn ghost block" data-del style="margin-top:6px">키 지우기</button>':''}`;
+    el.querySelectorAll('[data-pv]').forEach(b=>b.onclick=()=>{ prov=b.dataset.pv; draw(el,close); });
+    const val=()=>({provider:prov, key:$('[data-key]',el).value.trim(), model:$('[data-model]',el).value.trim()});
+    const msg=$('[data-msg]',el);
+    $('[data-test]',el).onclick=async()=>{ const v=val(); if(!v.key) return msg.textContent='키를 넣어 주세요';
+      msg.style.color='var(--muted)'; msg.textContent='확인하는 중…';
+      try{ const r=await byokAdapter(v).json('연결 테스트입니다. {"ok":true} 를 그대로 출력하세요.',{modelTier:'quick'}); msg.style.color='var(--good)'; msg.textContent=r&&r.ok?'연결됐어요! 저장을 눌러 주세요.':'응답은 왔어요. 저장해도 돼요.'; }
+      catch(e){ msg.style.color='var(--fix)'; msg.textContent=aiErrorMsg(e)+(e&&e.message?` (${String(e.message).slice(0,80)})`:''); } };
+    $('[data-save]',el).onclick=()=>{ const v=val(); if(!v.key) return msg.textContent='키를 넣어 주세요'; byokSet(v); close(); toast(`${v.provider==='gemini'?'Gemini':'Claude'} 연결을 저장했어요`); render(); };
+    const d=$('[data-del]',el); if(d) d.onclick=()=>{ byokSet(null); close(); toast('키를 지웠어요'); render(); };
+  };
+  sheet('', draw);
 }
 
 /* ============ 시작 ============ */
