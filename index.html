@@ -310,13 +310,16 @@ html,body{background-color:var(--bg);background-image:var(--grain),var(--fiber);
 .card,.field input,.field textarea,.btn,.chip,.tools input,.tools textarea,.ed-comment .in{background-color:var(--surface)}
 .btn.primary{background:var(--accent)} .chip.on{background:var(--ink)} .btn.ghost{background:transparent}
 .ed-back mark.on{background:var(--accent-soft)}
+.install-pill{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 12px;border-radius:99px;background:var(--accent);color:var(--accent-ink);font-size:12.5px;font-weight:500}
+.install-pill::before{content:'';width:10px;height:10px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4v12M6 11l6 6 6-6M5 21h14'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4v12M6 11l6 6 6-6M5 21h14'/%3E%3C/svg%3E") center/contain no-repeat}
+.install-pill[hidden]{display:none}
 
 
 </style>
 </head>
 <body>
 <div class="app">
-  <header class="top"><div class="brand">뭉<span>작가</span></div><div class="store-chip" id="storeChip">불러오는 중…</div></header>
+  <header class="top"><div class="brand">뭉<span>작가</span></div><div style="display:flex;align-items:center;gap:12px"><div class="store-chip" id="storeChip">불러오는 중…</div><button class="install-pill" id="installBtn" hidden>앱 설치</button></div></header>
   <main id="view"><div class="loading"><div class="spin"></div>작업실을 여는 중…</div></main>
 </div>
 <div class="weave-bar" id="weaveBar" hidden></div>
@@ -1864,7 +1867,7 @@ function styleHTML(){
     <button class="set-row" data-bk>백업 코드 복사<span>다른 기기·버전으로 옮기기</span></button>
     ${IS_PAGES?'<button class="set-row" data-bkf>백업 파일로 저장<span>.txt</span></button>':''}
     <button class="set-row" data-rs>백업 불러오기<span></span></button>
-    ${IS_PAGES&&S.installEvt?'<button class="set-row" data-inst>홈 화면에 설치<span></span></button>':''}
+    ${isStandalone()?'':`<button class="set-row" data-inst2>${IS_PAGES?'앱 설치 (홈 화면에 추가)':'설치형 앱 받기'}<span>${IS_PAGES?'':'moongzzik.github.io'}</span></button>`}
     ${IS_PAGES?`<a class="set-row" href="${ARTIFACT_URL}" target="_blank" rel="noopener" style="text-decoration:none;color:var(--ink)">AI 기능이 있는 claude.ai 버전<span>열기</span></a>`:''}
     <button class="set-row" data-about>뭉작가 소개 · 제작 개요<span></span></button>
   </div>
@@ -1883,8 +1886,40 @@ function bindStyle(v){
   $('[data-onb]',v).onclick=()=>showOnboarding(true);
   const ab=$('[data-about]',v); if(ab) ab.onclick=()=>{ S.sub='about'; render(); };
   bindAppTools(v);
+  const i2=$('[data-inst2]',v); if(i2) i2.onclick=onInstallClick;
   bindStyle_v1(v);
 }
+
+
+/* ============ [추가] 앱 설치(다운로드) 버튼 ============ */
+const PAGES_URL='https://moongzzik.github.io/moongjakga/';
+function isStandalone(){ try{ return matchMedia('(display-mode: standalone)').matches || navigator.standalone===true; }catch(e){ return false; } }
+function installGuideSheet(){
+  const ua=navigator.userAgent||''; const ios=/iPhone|iPad|iPod/.test(ua); const samsung=/SamsungBrowser/.test(ua);
+  sheet(`<h3>뭉작가 앱 설치</h3><p class="small muted">홈 화면에 아이콘이 생기고, 인터넷이 없어도 열려요.</p>
+    <div class="rows" style="margin-top:8px">
+      <div class="row-item" style="display:block"><div class="t" style="font-family:var(--serif)">${ios?'아이폰 (사파리)':'안드로이드 크롬'}</div><div class="m" style="font-size:13.5px;color:var(--ink2);margin-top:4px">${ios?'아래 공유 버튼(□↑) → <b>홈 화면에 추가</b> → 추가':'오른쪽 위 ⋮ → <b>홈 화면에 추가</b> 또는 <b>앱 설치</b> → 설치'}</div></div>
+      ${samsung?'<div class="row-item" style="display:block"><div class="t" style="font-family:var(--serif)">삼성 인터넷</div><div class="m" style="font-size:13.5px;color:var(--ink2);margin-top:4px">아래 ≡ 메뉴 → <b>현재 페이지 추가</b> → 홈 화면</div></div>':''}
+      <div class="row-item" style="display:block"><div class="t" style="font-family:var(--serif)">카톡에서 열었다면</div><div class="m" style="font-size:13.5px;color:var(--ink2);margin-top:4px">⋮ → <b>다른 브라우저로 열기</b>로 크롬(아이폰은 사파리)에서 연 뒤 설치하세요.</div></div>
+    </div>
+    <button class="btn block" data-x style="margin-top:16px">확인</button>`, (el,close)=>{ $('[data-x]',el).onclick=close; });
+}
+async function onInstallClick(){
+  if(!IS_PAGES){ // claude.ai 버전 → 설치형 앱 주소로
+    sheet(`<h3>뭉작가 앱 받기</h3><p class="serif" style="font-size:15.5px;line-height:1.8">설치형 앱은 아래 주소에서 받을 수 있어요. 열린 화면에서 다시 <b>앱 설치</b>를 누르면 홈 화면에 추가돼요.</p>
+      <p class="small muted">설치형 앱은 글이 그 폰에 따로 저장되고, AI 기능은 이 claude.ai 버전에서 써요. 글은 나 → 백업 코드로 옮길 수 있어요.</p>
+      <a class="btn primary block" href="${PAGES_URL}" target="_blank" rel="noopener" style="text-decoration:none;margin-top:12px">설치 페이지 열기</a>
+      <p class="small muted" style="text-align:center;margin-top:8px">${PAGES_URL.replace('https://','')}</p>`);
+    return;
+  }
+  const e=S.installEvt;
+  if(e){ e.prompt(); try{ const r=await e.userChoice; if(r&&r.outcome==='accepted') toast('홈 화면에 뭉작가를 추가했어요'); }catch(_){} S.installEvt=null; updateInstallBtn(); return; }
+  installGuideSheet();
+}
+function updateInstallBtn(){ const b=$('#installBtn'); if(!b) return; b.hidden=isStandalone(); b.textContent=IS_PAGES?'앱 설치':'앱 받기'; }
+window.addEventListener('appinstalled',()=>{ S.installEvt=null; const b=$('#installBtn'); if(b) b.hidden=true; toast('설치됐어요. 홈 화면에서 뭉작가를 열어 보세요'); });
+window.addEventListener('beforeinstallprompt',()=>setTimeout(updateInstallBtn,0));
+document.addEventListener('DOMContentLoaded',()=>{ const b=$('#installBtn'); if(b) b.onclick=onInstallClick; updateInstallBtn(); });
 
 /* ============ 시작 ============ */
 (async function start(){
