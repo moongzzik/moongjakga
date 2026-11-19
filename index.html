@@ -321,6 +321,12 @@ html,body{background-color:var(--bg);background-image:var(--grain),var(--fiber);
 .ai-panel p{margin:6px 0 0;font-size:14px;line-height:1.6}
 body:not(.editing) .ai-panel{bottom:calc(var(--safe-b) + 74px)}
 .ed-wrap ~ [data-area] .loading,.ed-wrap ~ [data-area] .note{display:none}
+.aic{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:14px 0}
+.aic .t{font-family:var(--serif);font-size:16px;display:flex;align-items:center;gap:8px}
+.aic .t .dot{width:8px;height:8px;border-radius:50%;background:var(--good);display:inline-block}
+.aic .m{font-size:12.5px;color:var(--muted);margin-top:2px}
+.aic .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+details summary{list-style:none} details summary::-webkit-details-marker{display:none}
 
 
 </style>
@@ -1762,12 +1768,14 @@ function openMoreSheet(w,v){
       <button class="set-row" data-ver>퇴고 기록<span>${(w.versions||[]).length}개</span></button>
       ${w.kind==='draft'?'':`<button class="set-row" data-toproj>투고작<span>${w.projectId&&S.projects[w.projectId]?esc(S.projects[w.projectId].title):'넣지 않음'}</span></button>`}
       ${w.genre==='poem'&&w.projectId?`<button class="set-row" data-final>투고 묶음 완성작<span>${w.final?'표시됨':'표시 안 함'}</span></button>`:''}
+      ${IS_PAGES?`<button class="set-row" data-aic>AI 연결<span>${(()=>{const c=byokGet(); return c&&c.key?(c.provider==='gemini'?'Gemini':'Claude')+' · 바꾸기':'연결하기'})()}</span></button>`:''}
       <button class="set-row" data-del style="color:var(--fix)">이 글 삭제<span></span></button>
     </div>`,
   (el,close)=>{
     el.querySelectorAll('[data-genre]').forEach(b=>b.onclick=()=>{ w.genre=b.dataset.genre; w.updatedAt=Date.now(); Store.save('writings',w); close(); render(); });
     $('[data-marks]',el).onclick=()=>{ S.marksOff=!S.marksOff; close(); render(); };
     $('[data-ver]',el).onclick=()=>{ close(); showVersions(w); };
+    const ac=$('[data-aic]',el); if(ac) ac.onclick=()=>{ close(); byokSheet(); };
     const tp=$('[data-toproj]',el); if(tp) tp.onclick=()=>{ close(); projPicker(w); };
     const fz=$('[data-final]',el); if(fz) fz.onclick=()=>{ w.final=!w.final; Store.save('writings',w); close(); toast(w.final?'투고 묶음의 완성작으로 표시했어요':'완성 표시를 뺐어요'); };
     $('[data-del]',el).onclick=()=>{ close(); confirmSheet('이 글을 삭제할까요? 되돌릴 수 없어요.','삭제',()=>{ delete S.writings[w.id]; Store.del('writings',w.id); S.sub=null; render(); toast('삭제했어요'); }); };
@@ -1830,7 +1838,8 @@ function openFeedbackSheet(w,v){
   const order=PERSONA_ORDER[w.genre]||PERSONA_ORDER.free; const all=Object.keys(PERSONAS).filter(k=>k!=='grader'||w.genre==='argument');
   const main=order.slice(0,3), rest=all.filter(k=>!main.includes(k));
   const fs=w.feedbacks||[];
-  sheet(`<h3>작가 피드백</h3><p class="small muted">받은 피드백은 본문에 밑줄로 표시돼요. 밑줄을 누르면 코멘트가 나와요.</p>
+  const bc=IS_PAGES?byokGet():null;
+  sheet(`<h3>작가 피드백</h3><p class="small muted">받은 피드백은 본문에 밑줄로 표시돼요. 밑줄을 누르면 코멘트가 나와요.${IS_PAGES?` <button class="link" data-aic2 style="font-size:13px">${bc&&bc.key?`AI: ${bc.provider==='gemini'?'Gemini':'Claude'} · 바꾸기`:'AI 연결하기'}</button>`:''}</p>
     <div class="rows" style="margin-top:6px">${main.map(k=>personaRow(k)).join('')}</div>
     <div data-rest hidden><div class="rows">${rest.map(k=>personaRow(k)).join('')}</div></div>
     ${rest.length?`<button class="link mute" data-morep style="margin:10px 0">다른 작가 ${rest.length}명 더 보기</button>`:''}
@@ -1839,6 +1848,7 @@ function openFeedbackSheet(w,v){
     el.querySelectorAll('[data-p]').forEach(b=>b.onclick=async()=>{ if(charsNoSp(w.body)<20) return toast('피드백을 받으려면 조금 더 써 주세요 (20자 이상)'); close(); S.fbIndex=null;
       S.aiLabel=`${PERSONAS[b.dataset.p].name}이(가) 원고를 읽는 중`;
       const before=(w.feedbacks||[]).length; await runFeedback(w,b.dataset.p,v); if((w.feedbacks||[]).length>before) showFeedbackResult(S.writings[w.id]||w); });
+    const a2=$('[data-aic2]',el); if(a2) a2.onclick=()=>{ close(); byokSheet(); };
     const mp=$('[data-morep]',el); if(mp) mp.onclick=()=>{ $('[data-rest]',el).hidden=false; mp.remove(); };
     el.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{ const bd=b.nextElementSibling; bd.hidden=!bd.hidden; b.lastElementChild.textContent=bd.hidden?'펼치기':'접기'; });
     el.querySelectorAll('[data-show]').forEach(b=>b.onclick=()=>{ S.fbIndex=+b.dataset.show; S.fbFor=w.id; S.marksOff=false; close(); render(); toast('본문의 밑줄을 눌러 보세요'); });
@@ -1864,6 +1874,7 @@ function styleHTML(){
   const nb=badges().filter(x=>x[2]).length;
   return `<div style="padding:20px 0 4px"><div class="eyebrow">${ob?esc(GOALS[ob.goal]||''):'목표 미설정'}</div><h1 style="font-size:26px;margin-top:4px">나의 기록</h1>
     <div class="small muted" style="margin-top:4px">${ob?`${ob.genres.map(g=>GENRES[g].name).join(' · ')} · 하루 ${ob.minutes}분 · `:''}<button class="link" data-onb style="font-size:13px">목표 바꾸기</button></div></div>
+  ${IS_PAGES?`<h2>AI 연결</h2><div data-byokbox>${byokStatusHTML()}</div>`:''}
   ${weekDotsHTML()}
   <div class="nums"><div><b>${ws.reduce((a,w)=>a+charsNoSp(w.body),0).toLocaleString()}</b><span>쓴 글자</span></div><div><b>${streak()}</b><span>연속 쓴 날</span></div><div><b>${revs}</b><span>퇴고</span></div></div>
   <h2>주별로 쓴 글자</h2>${weeklyChartHTML()}
@@ -1898,7 +1909,8 @@ function bindStyle(v){
   const ab=$('[data-about]',v); if(ab) ab.onclick=()=>{ S.sub='about'; render(); };
   bindAppTools(v);
   const i2=$('[data-inst2]',v); if(i2) i2.onclick=onInstallClick;
-  const by=$('[data-byok]',v); if(by) by.onclick=byokSheet;
+  const by=$('[data-byok]',v); if(by) by.onclick=()=>byokSheet();
+  bindByokStatus(v);
   bindStyle_v1(v);
 }
 
@@ -2091,6 +2103,52 @@ function byokSheet(){
       catch(e){ msg.style.color='var(--fix)'; msg.textContent=aiErrorMsg(e)+(e&&e.message?` (${String(e.message).slice(0,80)})`:''); } };
     $('[data-save]',el).onclick=()=>{ const v=val(); if(!v.key) return msg.textContent='키를 넣어 주세요'; byokSet(v); close(); toast(`${v.provider==='gemini'?'Gemini':'Claude'} 연결을 저장했어요`); render(); };
     const d=$('[data-del]',el); if(d) d.onclick=()=>{ byokSet(null); close(); toast('키를 지웠어요'); render(); };
+  };
+  sheet('', draw);
+}
+
+
+/* ============ [수정] AI 연결 바꾸기 쉽게 ============ */
+function maskKey(k){ k=String(k||''); return k.length>10?k.slice(0,4)+'••••'+k.slice(-4):'••••'; }
+function byokStatusHTML(){
+  const c=byokGet();
+  if(!c||!c.key) return `<div class="aic"><div><div class="t">AI 연결 안 됨</div><div class="m">구글(Gemini)이나 Claude 키를 넣으면 이 앱에서 AI 도움을 받아요.</div></div>
+    <div class="acts"><button class="btn sm primary" data-byok-open="gemini">AI 연결하기</button></div></div>`;
+  const other=c.provider==='gemini'?'claude':'gemini';
+  return `<div class="aic"><div><div class="t"><i class="dot"></i>${c.provider==='gemini'?'Gemini (구글)':'Claude'} 연결됨</div>
+    <div class="m">키 ${esc(maskKey(c.key))} · 모델 ${esc(c.model||BYOK_DEF[c.provider])}</div></div>
+    <div class="acts"><button class="btn sm" data-byok-open="${c.provider}">키 바꾸기</button><button class="btn sm" data-byok-open="${other}">${other==='gemini'?'Gemini로':'Claude로'} 바꾸기</button><button class="btn sm ghost" data-byok-off>연결 끊기</button></div></div>`;
+}
+function bindByokStatus(root){
+  root.querySelectorAll('[data-byok-open]').forEach(b=>b.onclick=()=>byokSheet(b.dataset.byokOpen));
+  const off=$('[data-byok-off]',root); if(off) off.onclick=()=>confirmSheet('AI 연결을 끊을까요? 이 폰에 저장된 키가 지워져요.','연결 끊기',()=>{ byokSet(null); toast('AI 연결을 끊었어요'); render(); });
+}
+function byokSheet(provArg){
+  const cur=byokGet(); let prov=provArg||(cur&&cur.provider)||'gemini';
+  const draw=(el,close)=>{
+    const g=prov==='gemini'; const same=cur&&cur.key&&cur.provider===prov;
+    el.innerHTML=`<div class="grab"></div><h3>AI 연결</h3>
+    <div class="note" style="margin-top:8px">${cur&&cur.key?`지금: <b>${cur.provider==='gemini'?'Gemini (구글)':'Claude'}</b> · 키 ${esc(maskKey(cur.key))}`:'지금: 연결 안 됨'}</div>
+    <div class="seg" style="margin-top:6px"><button data-pv="gemini" class="${g?'on':''}">Gemini (구글)</button><button data-pv="claude" class="${g?'':'on'}">Claude</button></div>
+    <details style="margin-top:10px" ${same?'':'open'}><summary class="small" style="color:var(--accent);cursor:pointer">${g?'구글':'Claude'} 키 만드는 법</summary>
+      <div class="note">${g?`1. <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> → 구글 계정 로그인<br>2. <b>Create API key</b> → 키 복사<br>3. 아래 칸에 붙여 넣기<br><span class="muted">무료 등급으로 시작할 수 있어요(사용 한도 있음). 무료 등급은 입력 내용이 구글 모델 개선에 쓰일 수 있어요.</span>`
+        :`1. <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> → 가입·로그인<br>2. Billing에서 크레딧 충전(유료)<br>3. API Keys → <b>Create Key</b> → 키 복사 → 아래 칸에 붙여 넣기`}</div></details>
+    <label class="field"><span>${same?'새 키 (비워 두면 지금 키 그대로)':(g?'Gemini':'Claude')+' API 키'}</span>
+      <div style="display:flex;gap:6px"><input data-key type="password" autocomplete="off" spellcheck="false" placeholder="${same?'새 키를 붙여 넣으면 바뀌어요':(g?'AIza...':'sk-ant-...')}" style="flex:1"><button class="btn sm" data-eye style="height:44px">보기</button></div></label>
+    <label class="field"><span>모델 (비워 두면 기본값: ${esc(BYOK_DEF[prov])})</span><input data-model autocomplete="off" spellcheck="false" placeholder="${esc(BYOK_DEF[prov])}" value="${same?esc(cur.model||''):''}"></label>
+    <div data-msg class="small" style="min-height:20px;margin:4px 0"></div>
+    <div style="display:flex;gap:8px"><button class="btn block" data-test>연결 테스트</button><button class="btn primary block" data-save>${same?'바꾸기 저장':'저장'}</button></div>
+    ${cur&&cur.key?'<button class="btn ghost block" data-del style="margin-top:6px;color:var(--fix)">연결 끊기 (키 지우기)</button>':''}`;
+    el.querySelectorAll('[data-pv]').forEach(b=>b.onclick=()=>{ prov=b.dataset.pv; draw(el,close); });
+    const ki=$('[data-key]',el); $('[data-eye]',el).onclick=()=>{ ki.type=ki.type==='password'?'text':'password'; $('[data-eye]',el).textContent=ki.type==='password'?'보기':'숨기기'; };
+    const val=()=>{ const k=ki.value.trim(); return {provider:prov, key:k||(same?cur.key:''), model:$('[data-model]',el).value.trim()}; };
+    const msg=$('[data-msg]',el);
+    $('[data-test]',el).onclick=async()=>{ const v=val(); if(!v.key){ msg.style.color='var(--fix)'; return msg.textContent='키를 넣어 주세요'; }
+      msg.style.color='var(--muted)'; msg.textContent='확인하는 중…';
+      try{ const r=await byokAdapter(v).json('연결 테스트입니다. {"ok":true} 를 그대로 출력하세요.',{modelTier:'quick'}); msg.style.color='var(--good)'; msg.textContent=r&&r.ok?'연결됐어요! 저장을 눌러 주세요.':'응답은 왔어요. 저장해도 돼요.'; }
+      catch(e){ msg.style.color='var(--fix)'; msg.textContent=aiErrorMsg(e)+(e&&e.message?` (${String(e.message).slice(0,80)})`:''); } };
+    $('[data-save]',el).onclick=()=>{ const v=val(); if(!v.key){ msg.style.color='var(--fix)'; return msg.textContent='키를 넣어 주세요'; } byokSet(v); close(); toast(`${v.provider==='gemini'?'Gemini':'Claude'} 연결을 저장했어요`); render(); };
+    const d=$('[data-del]',el); if(d) d.onclick=()=>{ byokSet(null); close(); toast('AI 연결을 끊었어요'); render(); };
   };
   sheet('', draw);
 }
