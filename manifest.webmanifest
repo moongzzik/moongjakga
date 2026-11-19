@@ -1,4 +1,5 @@
 {
+  "id": "./",
   "name": "뭉작가 — 나만의 문체를 짓는 글쓰기 앱",
   "short_name": "뭉작가",
   "description": "AI가 대신 쓰지 않는, 나만의 문체를 짓는 글쓰기 창작 앱",
@@ -10,8 +11,21 @@
   "background_color": "#f3ede1",
   "theme_color": "#f3ede1",
   "icons": [
-    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
-    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
-    {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

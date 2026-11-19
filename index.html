@@ -346,6 +346,26 @@ details summary{list-style:none} details summary::-webkit-details-marker{display
 "use strict";
 // [추가] 뭉작가 — 실행 환경
 const APP_NAME='뭉작가';
+/* 홈 화면 이름: 첫 화면에 적은 이름 + '작가' (예: 뭉 → 뭉작가) */
+function cleanPen(v){ v=String(v||'').replace(/\s+/g,'').replace(/작가$/,'').slice(0,4); return v; }
+function penName(){ return cleanPen(S.profile&&S.profile.penName)||'뭉'; }
+function appName(){ return penName()+'작가'; }
+function applyAppName(){
+  const pen=penName(), name=appName();
+  document.title=name;
+  const at=document.querySelector('meta[name="apple-mobile-web-app-title"]'); if(at) at.setAttribute('content',name);
+  const br=document.querySelector('header.top .brand'); if(br) br.innerHTML=esc(pen)+'<span>작가</span>';
+  const ml=document.querySelector('link[rel="manifest"]'); if(!ml) return;
+  if(navigator.serviceWorker&&navigator.serviceWorker.controller){ ml.href='manifest.webmanifest?n='+encodeURIComponent(pen); return; }
+  // 서비스워커가 아직 없을 때(첫 방문): 이 자리에서 이름을 넣은 설치 정보를 만들어 붙임
+  try{
+    const base=new URL('./',location.href).href;
+    const m={id:base, name:name+' — 나만의 문체를 짓는 글쓰기 앱', short_name:name, description:'AI가 대신 쓰지 않는, 나만의 문체를 짓는 글쓰기 창작 앱', lang:'ko', start_url:base, scope:base, display:'standalone', orientation:'portrait', background_color:'#f3ede1', theme_color:'#f3ede1',
+      icons:[{src:base+'icon-192.png',sizes:'192x192',type:'image/png'},{src:base+'icon-512.png',sizes:'512x512',type:'image/png'},{src:base+'icon-maskable-512.png',sizes:'512x512',type:'image/png',purpose:'maskable'}]};
+    if(ml.dataset.blob) URL.revokeObjectURL(ml.dataset.blob);
+    const u=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'application/manifest+json'})); ml.dataset.blob=u; ml.href=u;
+  }catch(_){}
+}
 const ARTIFACT_URL='https://claude.ai/artifact/U2Vi8L439oUit3H3it9oiv';
 const IS_PAGES=/github\.io$/.test(location.hostname)||location.protocol==='file:'||location.hostname==='localhost'||location.hostname==='127.0.0.1';
 /* ============ 공통 ============ */
@@ -1217,18 +1237,20 @@ function todayRoutine(){
 /* ---- 첫 실행 안내 ---- */
 function showOnboarding(force){
   const ob=S.profile.onboard||{goal:'debut', genres:[...LIT], minutes:15};
-  const st={goal:ob.goal, genres:new Set(ob.genres), minutes:ob.minutes};
+  const st={goal:ob.goal, genres:new Set(ob.genres), minutes:ob.minutes, pen:cleanPen(S.profile.penName)};
   const draw=(el,close)=>{
-    el.innerHTML=`<div class="grab"></div><h3>${force?'목표 설정 바꾸기':'반가워요! 먼저 세 가지만 알려 주세요'}</h3>
+    el.innerHTML=`<div class="grab"></div><h3>${force?'목표 설정 바꾸기':'반가워요! 먼저 네 가지만 알려 주세요'}</h3>
     <p class="small muted">답에 맞춰 매일의 15분 루틴과 시작 경로를 추천해 드려요. 나중에 '나의 기록' 탭에서 바꿀 수 있어요.</p>
-    <div class="field"><span>1. 지금 가장 가까운 목표</span><div style="display:flex;flex-wrap:wrap;gap:6px">${Object.entries(GOALS).map(([k,n])=>`<button class="chip ${st.goal===k?'on':''}" data-goal="${k}">${n}</button>`).join('')}</div></div>
-    <div class="field"><span>2. 쓰고 싶은 장르 (여러 개)</span><div style="display:flex;flex-wrap:wrap;gap:6px">${LIT.map(k=>`<button class="chip ${st.genres.has(k)?'on':''}" data-gen="${k}">${GENRES[k].name}</button>`).join('')}</div></div>
-    <div class="field"><span>3. 하루에 쓸 수 있는 시간</span><div style="display:flex;flex-wrap:wrap;gap:6px">${[15,30,60].map(m=>`<button class="chip ${st.minutes===m?'on':''}" data-min="${m}">${m===60?'1시간 이상':m+'분'+(m===15?' 이하':' 내외')}</button>`).join('')}</div></div>
+    <label class="field"><span>1. 작가 이름 — 홈 화면에 <b data-penprev>${esc((st.pen||'뭉')+'작가')}</b>로 저장돼요</span><input data-pen maxlength="4" placeholder="뭉" value="${esc(st.pen)}" autocomplete="off"></label>
+    <div class="field"><span>2. 지금 가장 가까운 목표</span><div style="display:flex;flex-wrap:wrap;gap:6px">${Object.entries(GOALS).map(([k,n])=>`<button class="chip ${st.goal===k?'on':''}" data-goal="${k}">${n}</button>`).join('')}</div></div>
+    <div class="field"><span>3. 쓰고 싶은 장르 (여러 개)</span><div style="display:flex;flex-wrap:wrap;gap:6px">${LIT.map(k=>`<button class="chip ${st.genres.has(k)?'on':''}" data-gen="${k}">${GENRES[k].name}</button>`).join('')}</div></div>
+    <div class="field"><span>4. 하루에 쓸 수 있는 시간</span><div style="display:flex;flex-wrap:wrap;gap:6px">${[15,30,60].map(m=>`<button class="chip ${st.minutes===m?'on':''}" data-min="${m}">${m===60?'1시간 이상':m+'분'+(m===15?' 이하':' 내외')}</button>`).join('')}</div></div>
     <button class="btn primary block" data-ok style="margin-top:14px" ${st.genres.size?'':'disabled'}>시작하기</button>`;
+    { const pi=$('[data-pen]',el), pv=$('[data-penprev]',el); pi.oninput=()=>{ st.pen=cleanPen(pi.value); pv.textContent=(st.pen||'뭉')+'작가'; }; }
     el.querySelectorAll('[data-goal]').forEach(b=>b.onclick=()=>{ st.goal=b.dataset.goal; draw(el,close); });
     el.querySelectorAll('[data-gen]').forEach(b=>b.onclick=()=>{ st.genres.has(b.dataset.gen)?st.genres.delete(b.dataset.gen):st.genres.add(b.dataset.gen); draw(el,close); });
     el.querySelectorAll('[data-min]').forEach(b=>b.onclick=()=>{ st.minutes=+b.dataset.min; draw(el,close); });
-    $('[data-ok]',el).onclick=()=>{ S.profile.onboard={goal:st.goal, genres:LIT.filter(g=>st.genres.has(g)), minutes:st.minutes, at:Date.now()}; Store.saveProfile(); close(); render();
+    $('[data-ok]',el).onclick=()=>{ S.profile.onboard={goal:st.goal, genres:LIT.filter(g=>st.genres.has(g)), minutes:st.minutes, at:Date.now()}; S.profile.penName=st.pen||'뭉'; Store.saveProfile(); applyAppName(); close(); render();
       if(!force) setTimeout(firstPathSheet,150); };
   };
   sheet('', (el,close)=>draw(el,close));
@@ -1920,7 +1942,7 @@ const PAGES_URL='https://moongzzik.github.io/moongjakga/';
 function isStandalone(){ try{ return matchMedia('(display-mode: standalone)').matches || navigator.standalone===true; }catch(e){ return false; } }
 function installGuideSheet(){
   const ua=navigator.userAgent||''; const ios=/iPhone|iPad|iPod/.test(ua); const samsung=/SamsungBrowser/.test(ua);
-  sheet(`<h3>뭉작가 앱 설치</h3><p class="small muted">홈 화면에 아이콘이 생기고, 인터넷이 없어도 열려요.</p>
+  sheet(`<h3>${esc(appName())} 앱 설치</h3><p class="small muted">홈 화면에 <b>${esc(appName())}</b> 아이콘이 생기고, 인터넷이 없어도 열려요.</p>
     <div class="rows" style="margin-top:8px">
       <div class="row-item" style="display:block"><div class="t" style="font-family:var(--serif)">${ios?'아이폰 (사파리)':'안드로이드 크롬'}</div><div class="m" style="font-size:13.5px;color:var(--ink2);margin-top:4px">${ios?'아래 공유 버튼(□↑) → <b>홈 화면에 추가</b> → 추가':'오른쪽 위 ⋮ → <b>홈 화면에 추가</b> 또는 <b>앱 설치</b> → 설치'}</div></div>
       ${samsung?'<div class="row-item" style="display:block"><div class="t" style="font-family:var(--serif)">삼성 인터넷</div><div class="m" style="font-size:13.5px;color:var(--ink2);margin-top:4px">아래 ≡ 메뉴 → <b>현재 페이지 추가</b> → 홈 화면</div></div>':''}
@@ -1937,11 +1959,11 @@ async function onInstallClick(){
     return;
   }
   const e=S.installEvt;
-  if(e){ e.prompt(); try{ const r=await e.userChoice; if(r&&r.outcome==='accepted') toast('홈 화면에 뭉작가를 추가했어요'); }catch(_){} S.installEvt=null; updateInstallBtn(); return; }
+  if(e){ e.prompt(); try{ const r=await e.userChoice; if(r&&r.outcome==='accepted') toast(`홈 화면에 ${appName()}를 추가했어요`); }catch(_){} S.installEvt=null; updateInstallBtn(); return; }
   installGuideSheet();
 }
 function updateInstallBtn(){ const b=$('#installBtn'); if(!b) return; b.hidden=isStandalone(); b.textContent=IS_PAGES?'앱 설치':'앱 받기'; }
-window.addEventListener('appinstalled',()=>{ S.installEvt=null; const b=$('#installBtn'); if(b) b.hidden=true; toast('설치됐어요. 홈 화면에서 뭉작가를 열어 보세요'); });
+window.addEventListener('appinstalled',()=>{ S.installEvt=null; const b=$('#installBtn'); if(b) b.hidden=true; toast(`설치됐어요. 홈 화면에서 ${appName()}를 열어 보세요`); });
 window.addEventListener('beforeinstallprompt',()=>setTimeout(updateInstallBtn,0));
 document.addEventListener('DOMContentLoaded',()=>{ const b=$('#installBtn'); if(b) b.onclick=onInstallClick; updateInstallBtn(); });
 
@@ -2264,6 +2286,7 @@ askAI=async function(prompt,opts={}){
 (async function start(){
   await Store.init(); await Store.load();
   { const sc=$('#storeChip'); sc.textContent = Store.mode==='db'?'계정에 저장':Store.mode==='local'?(Store.failed?'이 기기에 임시 저장':'이 기기에 저장'):'저장 안 됨'; sc.classList.toggle('warn', Store.mode!=='db'&&(!!Store.failed||Store.mode==='memory')); }
+  applyAppName(); if(navigator.serviceWorker) navigator.serviceWorker.addEventListener('controllerchange',applyAppName);
   S.tab=null; route(); getAI();
   if(!S.profile.onboard) setTimeout(()=>showOnboarding(),300);
   document.addEventListener('visibilitychange',()=>{ if(document.hidden&&S.editorCommit&&S.tab==='write'&&S.sub) S.editorCommit(); });
