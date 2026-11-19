@@ -1990,7 +1990,7 @@ async function askAI(prompt, opts={}){
   AI_CTL=new AbortController(); const ctl=AI_CTL; const t0=Date.now(); let chars=0, first=!S.aiUsedOnce;
   const draw=()=>{ const sec=Math.floor((Date.now()-t0)/1000);
     aiPanel(`<div class="k"><span><span class="spin" style="display:inline-block;vertical-align:-3px;margin-right:8px"></span>${esc(label)}</span><button data-aix class="small muted">중지</button></div>
-      <p class="small" style="margin-top:6px">${chars?`답을 쓰는 중 · ${chars.toLocaleString()}자`:sec<3&&first?'처음이면 AI 사용 허용 창이 떠요. "허용"을 눌러 주세요.':`생각하는 중 · ${sec}초`}</p>
+      <p class="small" style="margin-top:6px">${chars?`답을 쓰는 중 · ${chars.toLocaleString()}자`:sec<3&&first&&!ai.byok?'처음이면 AI 사용 허용 창이 떠요. "허용"을 눌러 주세요.':`생각하는 중 · ${sec}초`}</p>
       <div class="small muted">${chars?'':'보통 10~40초, 글이 길면 1분 넘게 걸릴 수 있어요.'}</div>`, {onStop:()=>ctl.abort()}); };
   draw(); const tick=setInterval(draw,1000);
   const o={modelTier:opts.tier||'default', signal:ctl.signal, onText:({text})=>{ chars=text.length; }};
@@ -2138,8 +2138,13 @@ function byokSheet(provArg){
     <label class="field"><span>모델 (비워 두면 기본값: ${esc(BYOK_DEF[prov])})</span><input data-model autocomplete="off" spellcheck="false" placeholder="${esc(BYOK_DEF[prov])}" value="${same?esc(cur.model||''):''}"></label>
     <div data-msg class="small" style="min-height:20px;margin:4px 0"></div>
     <div style="display:flex;gap:8px"><button class="btn block" data-test>연결 테스트</button><button class="btn primary block" data-save>${same?'바꾸기 저장':'저장'}</button></div>
-    ${cur&&cur.key?'<button class="btn ghost block" data-del style="margin-top:6px;color:var(--fix)">연결 끊기 (키 지우기)</button>':''}`;
+    ${cur&&cur.key?'<button class="btn ghost block" data-del style="margin-top:6px;color:var(--fix)">연결 끊기 (키 지우기)</button>':''}
+    ${aiLogGet().length?`<details style="margin-top:14px"><summary class="small muted" style="cursor:pointer">최근 연결 기록 ${aiLogGet().length}개 보기</summary>
+      <div class="small" style="margin-top:8px;font-family:monospace;font-size:11.5px;line-height:1.6;color:var(--ink2)">${aiLogGet().slice().reverse().map(l=>`${fmtTime(l.t)} ${esc(l.prov||'')} ${esc(l.model||'')} · ${esc(l.code||'')}${l.status?' '+l.status:''}${l.try?' · '+l.try+'번째':''}<br><span class="muted">${esc(l.msg||'')}</span>`).join('<br>')}</div>
+      <div style="display:flex;gap:8px;margin-top:8px"><button class="btn sm" data-logcp>기록 복사</button><button class="btn sm ghost" data-logclr>기록 지우기</button></div></details>`:''}`;
     el.querySelectorAll('[data-pv]').forEach(b=>b.onclick=()=>{ prov=b.dataset.pv; draw(el,close); });
+    const lc=$('[data-logcp]',el); if(lc) lc.onclick=()=>copyText(JSON.stringify(aiLogGet())).then(ok=>toast(ok?'기록을 복사했어요':'복사 실패'));
+    const lx=$('[data-logclr]',el); if(lx) lx.onclick=()=>{ try{ localStorage.removeItem('mjk.ailog'); }catch(_){} draw(el,close); };
     const ki=$('[data-key]',el); $('[data-eye]',el).onclick=()=>{ ki.type=ki.type==='password'?'text':'password'; $('[data-eye]',el).textContent=ki.type==='password'?'보기':'숨기기'; };
     const val=()=>{ const k=ki.value.trim(); return {provider:prov, key:k||(same?cur.key:''), model:$('[data-model]',el).value.trim()}; };
     const msg=$('[data-msg]',el);
@@ -2152,6 +2157,108 @@ function byokSheet(provArg){
   };
   sheet('', draw);
 }
+
+
+/* ============ [수정] AI 연결 튼튼하게: 스트리밍 · 자동 재시도 · 예비 모델 · 화면 켜 두기 · 오류 기록 ============ */
+const BYOK_FALLBACK={gemini:'gemini-3.5-flash-lite', claude:'claude-haiku-5-5'};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function aiLog(e,extra={}){ try{ const L=JSON.parse(localStorage.getItem('mjk.ailog')||'[]'); L.push({t:Date.now(),code:e&&e.code,status:e&&e.status,msg:String(e&&e.message||'').slice(0,160),...extra}); while(L.length>15) L.shift(); localStorage.setItem('mjk.ailog',JSON.stringify(L)); }catch(_){} }
+function aiLogGet(){ try{ return JSON.parse(localStorage.getItem('mjk.ailog')||'[]'); }catch(_){ return []; } }
+let AI_HIDDEN_DURING=false;
+document.addEventListener('visibilitychange',()=>{ if(document.hidden&&AI_CTL&&!AI_CTL.signal.aborted&&$('#aiPanel .spin')) AI_HIDDEN_DURING=true; });
+function classify(status, body){
+  const m=String((body&&body.error&&(body.error.message||body.error.type||body.error.status))||'');
+  const t=String((body&&body.error&&body.error.type)||'');
+  if(status===401||status===403||/API key not valid|invalid x-api-key|authentication|API_KEY_INVALID|permission/i.test(m)) return {code:'bad_key',status,message:m};
+  if(status===402||/credit balance|billing|insufficient/i.test(m)) return {code:'no_credit',status,message:m};
+  if(status===404||(status===400&&/model/i.test(m)&&/not found|not supported|unknown/i.test(m))) return {code:'bad_model',status,message:m};
+  if(status===429){ if(/per day|daily|PerDay|exhausted|quota/i.test(m)&&!/per minute|PerMinute/i.test(m)) return {code:'quota_day',status,message:m}; return {code:'busy',status,message:m}; }
+  if(status>=500||status===529||/overloaded|UNAVAILABLE|high demand/i.test(m+t)) return {code:'busy',status,message:m};
+  if(status===400&&/safety|blocked/i.test(m)) return {code:'refused',status,message:m};
+  return {code:'upstream_error',status,message:m||('HTTP '+status)};
+}
+async function readSSE(res, onData, idleMs, ctl){
+  const rd=res.body.getReader(); const dec=new TextDecoder(); let buf=''; let timer;
+  const arm=()=>{ clearTimeout(timer); timer=setTimeout(()=>{ ctl.idle=true; ctl.abort(); }, idleMs); };
+  arm();
+  try{ for(;;){ const {done,value}=await rd.read(); if(done) break; arm(); buf+=dec.decode(value,{stream:true});
+      let i; while((i=buf.indexOf('\n'))>=0){ const line=buf.slice(0,i).replace(/\r$/,''); buf=buf.slice(i+1); if(line.startsWith('data:')){ const d=line.slice(5).trim(); if(d&&d!=='[DONE]'){ try{ onData(JSON.parse(d)); }catch(e){ if(e&&e.code) throw e; } } } } }
+  } finally { clearTimeout(timer); }
+}
+function byokAdapter(cfg){
+  const once=async(prompt,o,model,imgs)=>{
+    const text=prompt+'\n\n(반드시 JSON만 출력하세요.)';
+    const ctl=new AbortController(); const outer=o.signal; const onAbort=()=>ctl.abort(); if(outer){ if(outer.aborted) throw {code:'cancelled'}; outer.addEventListener('abort',onAbort); }
+    let out='', res;
+    try{
+      if(cfg.provider==='gemini'){
+        res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`,{method:'POST',signal:ctl.signal,
+          headers:{'content-type':'application/json','x-goog-api-key':cfg.key},
+          body:JSON.stringify({contents:[{role:'user',parts:[...imgs.map(i=>({inline_data:{mime_type:i.type,data:i.data}})),{text}]}],generationConfig:{responseMimeType:'application/json',maxOutputTokens:16384}})});
+        if(!res.ok){ let j=null; try{ j=await res.json(); }catch(_){ } throw classify(res.status,Array.isArray(j)?j[0]:j); }
+        let finish='';
+        await readSSE(res,d=>{ if(d.error) throw classify(d.error.code||500,{error:d.error}); const c=(d.candidates||[])[0]; if(!c) return; if(c.finishReason) finish=c.finishReason;
+          const add=((c.content&&c.content.parts)||[]).filter(p=>!p.thought).map(p=>p.text||'').join(''); if(add){ out+=add; o.onText&&o.onText({text:out,delta:add}); } }, 100000, ctl);
+        if(!out.trim()&&finish==='SAFETY') throw {code:'refused'};
+      } else {
+        res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',signal:ctl.signal,
+          headers:{'content-type':'application/json','x-api-key':cfg.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+          body:JSON.stringify({model,max_tokens:4096,stream:true,messages:[{role:'user',content:[...imgs.map(i=>({type:'image',source:{type:'base64',media_type:i.type,data:i.data}})),{type:'text',text}]}]})});
+        if(!res.ok){ let j=null; try{ j=await res.json(); }catch(_){ } throw classify(res.status,j); }
+        await readSSE(res,d=>{ if(d.type==='error') throw classify(d.error&&d.error.type==='overloaded_error'?529:500,{error:d.error});
+          if(d.type==='content_block_delta'&&d.delta&&d.delta.type==='text_delta'){ out+=d.delta.text; o.onText&&o.onText({text:out,delta:d.delta.text}); } }, 100000, ctl);
+      }
+    }catch(e){
+      if(e&&e.code) throw e;
+      if(outer&&outer.aborted) throw {code:'cancelled'};
+      if(ctl.idle) throw {code:'busy',message:'응답이 오래 멈춰서 다시 시도'};
+      if(!navigator.onLine) throw {code:'offline',message:'오프라인'};
+      throw {code:'network',message:String(e&&e.message||e)};
+    } finally { if(outer) outer.removeEventListener('abort',onAbort); }
+    if(!out.trim()) throw {code:'empty_completion'};
+    return out;
+  };
+  const call=async(prompt,o={})=>{
+    const imgs=o.images?await Promise.all([].concat(o.images).map(blobB64)):[];
+    const tier=o.modelTier||'default';
+    const main=(cfg.model&&cfg.model.trim())||(tier==='quick'?BYOK_QUICK:BYOK_DEF)[cfg.provider];
+    const fb=BYOK_FALLBACK[cfg.provider];
+    const delays=[1500,4000,8000];
+    for(let i=0;;i++){
+      const model=(i>=2&&fb&&fb!==main)?fb:main;
+      try{ const out=await once(prompt,o,model,imgs); S.aiRetry=0; return {text:out,truncated:false,model}; }
+      catch(e){
+        aiLog(e,{prov:cfg.provider,model,try:i+1});
+        const retryable=['busy','network','empty_completion'].includes(e.code)&&!(o.signal&&o.signal.aborted);
+        if(!retryable||i>=delays.length){ S.aiRetry=0; throw e; }
+        S.aiRetry=i+1; S.aiRetryWhy=e.code; await sleep(delays[i]);
+        while(document.hidden) await sleep(500);
+      }
+    }
+  };
+  const fn=(p,o)=>call(p,o);
+  fn.json=async(p,o)=>{ for(let k=0;k<2;k++){ const r=await call(p,o); try{ return parseJSON(r.text); }catch(e){ aiLog({code:'invalid_json',message:r.text.slice(0,120)},{prov:cfg.provider}); if(k===1) throw {code:'invalid_json',text:r.text}; } } };
+  fn.limits=async()=>({maxPromptBytes:262144, images:{maxCount:5}});
+  fn.byok=cfg.provider;
+  return fn;
+}
+const _aiErrorMsg1=aiErrorMsg;
+aiErrorMsg=function(e){
+  const c=e&&e.code;
+  if(c==='busy') return 'AI 서버가 지금 많이 바빠요. 세 번 다시 시도하고 예비 모델로도 해 봤지만 안 됐어요. 1~2분 뒤 다시 눌러 주세요.';
+  if(c==='quota_day') return '오늘 쓸 수 있는 무료 한도를 다 썼어요. 내일 다시 쓰거나, 나 → AI 연결에서 Claude로 바꿔 주세요.';
+  if(c==='offline') return '인터넷이 끊겨 있어요. 와이파이나 데이터를 켠 뒤 다시 눌러 주세요.';
+  if(c==='network') return AI_HIDDEN_DURING?'답을 기다리는 동안 다른 앱으로 넘어가서 연결이 끊겼어요. 답이 올 때까지 이 화면을 켜 두세요.':'인터넷 연결이 불안정해서 끊겼어요. 다시 눌러 주세요.';
+  return _aiErrorMsg1(e);
+};
+const _askAI1=askAI;
+askAI=async function(prompt,opts={}){
+  let wl=null; try{ if(navigator.wakeLock) wl=await navigator.wakeLock.request('screen'); }catch(_){}
+  AI_HIDDEN_DURING=false; S.aiRetry=0;
+  const rt=setInterval(()=>{ const p=$('#aiPanel .in > div.small.muted'); if(p&&S.aiRetry) p.textContent=`서버가 바빠서 다시 연결하는 중이에요 (${S.aiRetry}/3)${S.aiRetry>=2?' · 예비 모델로 시도':''}`; else if(p&&!S.aiRetry&&IS_PAGES) p.textContent='답이 올 때까지 이 화면을 켜 두세요. 보통 10~40초 걸려요.'; },500);
+  try{ return await _askAI1(prompt,opts); }
+  finally{ clearInterval(rt); try{ wl&&wl.release(); }catch(_){} }
+};
 
 /* ============ 시작 ============ */
 (async function start(){
