@@ -345,7 +345,6 @@ details summary{list-style:none} details summary::-webkit-details-marker{display
 <script>
 "use strict";
 // [추가] 뭉작가 — 실행 환경
-const APP_NAME='뭉작가';
 /* 홈 화면 이름: 첫 화면에 적은 이름 + '작가' (예: 뭉 → 뭉작가) */
 function cleanPen(v){ v=String(v||'').replace(/\s+/g,'').replace(/작가$/,'').slice(0,4); return v; }
 function penName(){ return cleanPen(S.profile&&S.profile.penName)||'뭉'; }
@@ -581,22 +580,7 @@ function fitDoc(w){
 function markDay(){ const d=today(), days=S.profile.days||(S.profile.days=[]); if(!days.includes(d)){ days.push(d); if(days.length>120) days.shift(); Store.saveProfile(); } }
 
 /* ============ AI ============ */
-async function getAI_v1(){
-  if(!S.aiPromise) S.aiPromise=(async()=>{ try{ if(!(window.claude&&claude.use)) return null; const ai=await claude.use('sample'); if(ai&&ai.limits){ try{ const l=await ai.limits(); S.aiImages=!!(l&&l.images); }catch(e){} } return ai; }catch(e){ return null; } })();
-  return S.aiPromise;
-}
 function parseJSON(t){ const s=t.indexOf('{'), e=t.lastIndexOf('}'); if(s<0||e<0) throw new Error('형식 오류'); return JSON.parse(t.slice(s,e+1)); }
-async function askAI(prompt, opts={}){
-  const ai=await getAI(); if(!ai) throw {code:'no_ai'};
-  const o={modelTier:opts.tier||'default'}; if(opts.images) o.images=opts.images;
-  const r=await ai(prompt,o); return parseJSON(r.text||'');
-}
-function aiErrorMsg(e){
-  if(e&&e.code==='no_ai') return IS_PAGES?'AI 기능(피드백·협동·사진 인식 등)은 claude.ai 버전 뭉작가에서 쓸 수 있어요.':'AI 기능을 이 화면에서 쓸 수 없어요. claude.ai에서 앱을 열어 주세요.';
-  if(e&&e.code==='not_granted') return 'AI 사용 권한이 허용되지 않았어요.';
-  if(e&&e.code==='rate_limited') return 'AI 요청이 많아요. 잠시 후 다시 시도해 주세요.';
-  return 'AI 응답을 받지 못했어요. 다시 시도해 주세요.';
-}
 function aiNoteHTML(e){ // [추가]
   const link=(e&&e.code==='no_ai')?`<br><a href="${ARTIFACT_URL}" target="_blank" rel="noopener" style="color:var(--red);font-weight:700">claude.ai에서 뭉작가 열기 ›</a><br><span class="small">기기를 옮길 땐 '나의 기록 → 백업 코드'로 글을 옮기세요.</span>`:'';
   return `<div class="note">${esc(aiErrorMsg(e))}${link}</div>`;
@@ -618,27 +602,9 @@ function streak(){
   while(set.has(new Date(t).toISOString().slice(0,10))){ n++; t-=86400e3; } return n;
 }
 /* ============ 라우팅 ============ */
-const TABS=['home','learn','write','insp','exam','style'];
-function setTab(t){ S.tab=t; document.querySelectorAll('nav.bottom a').forEach(a=>a.classList.toggle('on',a.dataset.tab===t)); }
-function route(){ const h=(location.hash||'#home').slice(1); const t=TABS.includes(h)?h:'home'; if(t!==S.tab){ S.sub=null; S.selectMode=false; S.selected.clear(); } setTab(t); render(); }
-function go(tab, sub, seg){ if(seg) S.seg[tab]=seg; if(location.hash!=='#'+tab){ S.tab=null; S._pendingSub=sub||null; location.hash=tab; } else { S.sub=sub||null; render(); } }
 document.querySelectorAll('nav.bottom a').forEach(a=>a.addEventListener('click',e=>{ if(location.hash==='#'+a.dataset.tab){ e.preventDefault(); if(S.editorCommit&&S.tab==='write'&&S.sub) S.editorCommit(); S.sub=null; render(); } }));
 window.addEventListener('hashchange',()=>{ const sub=S._pendingSub; S._pendingSub=null; route(); if(sub){ S.sub=sub; render(); } });
 function clearTimers(){ Object.values(S.timers).forEach(t=>clearInterval(t)); S.timers={}; }
-function render(){
-  const v=$('#view'); clearTimers(); $('#weaveBar').hidden=true;
-  if(S.tab==='home') S.sub==='bench' ? (v.innerHTML=benchHTML(), bindBack(v,'home')) : (v.innerHTML=homeHTML(), bindHome(v));
-  else if(S.tab==='learn') S.sub ? (v.innerHTML=lessonHTML(S.sub), bindLesson(v)) : (v.innerHTML=learnHTML(), bindLearn(v));
-  else if(S.tab==='write'){
-    if(S.sub&&S.writings[S.sub]) v.innerHTML=editorHTML(S.writings[S.sub]), bindEditor(v,S.writings[S.sub]);
-    else if(S.sub&&S.sub.startsWith('p:')&&S.projects[S.sub.slice(2)]) v.innerHTML=projectHTML(S.projects[S.sub.slice(2)]), bindProject(v,S.projects[S.sub.slice(2)]);
-    else v.innerHTML=writeListHTML(), bindWriteList(v);
-  }
-  else if(S.tab==='insp') S.sub&&S.ideas[S.sub] ? (v.innerHTML=ideaHTML(S.ideas[S.sub]), bindIdea(v,S.ideas[S.sub])) : (v.innerHTML=inspHTML(), bindInsp(v));
-  else if(S.tab==='style') v.innerHTML=styleHTML(), bindStyle(v);
-  else if(S.tab==='exam') S.sub ? (v.innerHTML=problemHTML(S.sub), bindProblem(v)) : (v.innerHTML=examHTML(), bindExam(v));
-  window.scrollTo(0,0);
-}
 function bindBack(v,tab){ const b=$('[data-back]',v); if(b) b.onclick=()=>{ S.sub=null; render(); }; }
 
 /* ============ 홈 = 제작 개요 ============ */
@@ -664,91 +630,10 @@ const EXTRAS = [
  {icon:'🏅', label:'주간 목표·성장 그래프·배지', sub:'나의 문체 탭에서 확인', go:['style']},
  {icon:'👀', label:'첫 독자 피드백', sub:'비평 용어 없이 어디서 빠져들고 멈췄는지 (작가 피드백에 추가)', go:['write']}
 ];
-function homeHTML(){
-  const ws=Object.values(S.writings).sort((a,b)=>b.updatedAt-a.updatedAt);
-  const p=DAILY[(DAY_KEY+S.dailyOffset)%DAILY.length]; const ap=activeProject();
-  return `${S.profile.onboard?today15HTML():`<div class="card hero"><div class="label">시작하기</div><div class="prompt">목표와 장르, 하루 시간을 알려 주시면 매일의 루틴을 추천해 드려요.</div><div class="row"><button class="btn primary" data-onb>시작 설정</button></div></div>`}
-  ${ap?`<h2 style="margin-top:18px">진행 중인 투고작</h2>${projCardHTML(ap)}`:(S.profile.onboard?`<button class="opt" data-newp2><div class="ic">🗂️</div><div><b>투고작 프로젝트 만들기</b><span>매일의 조각을 공모전 투고작 한 편으로 모아요</span></div></button>`:'')}
-  <div class="card tight"><div class="small muted">오늘의 글감 · ${esc(GENRES[p.g].name)}</div><div style="font-family:var(--serif);font-size:16px;margin:4px 0 8px">${esc(p.t)}</div>
-    <div style="display:flex;gap:6px"><button class="btn sm primary" data-daily>이 글감으로 쓰기</button><button class="btn sm" data-shuffle>다른 글감</button></div></div>
-  <div class="stats">
-    <div class="stat"><b>${streak()}</b><span>연속 쓴 날</span></div>
-    <div class="stat"><b>${ws.length}</b><span>쓴 글</span></div>
-    <div class="stat"><b>${Object.keys(S.profile.lessonsDone||{}).length}/${Object.keys(LESSON_MAP).length}</b><span>마친 레슨</span></div>
-  </div>
-  <div class="card principle"><div class="stamp">원칙</div><div class="small"><b>AI는 질문하고, 문장은 당신이 씁니다.</b><br>AI는 대신 써 주지 않아요. 함께 고민하고, 묻고, 방향만 짚어 줍니다.<br><button class="btn sm" data-start style="margin-top:6px">처음이라면 기초부터</button></div></div>
-  ${ws.length?`<h2>이어 쓰기</h2>${ws.slice(0,2).map(writingRow).join('')}`:''}
-  <h2>제작 개요</h2>
-  ${OVERVIEW.map((o,i)=>`<button class="ov-item" data-ov="${i}"><div class="no">${esc(o.no)}</div><div><span class="memo-q">${esc(o.memo)}</span><b>→ ${esc(o.label)}</b><span>${esc(o.sub)}</span></div></button>`).join('')}
-  <h2>덧붙인 기능</h2>
-  ${EXTRAS.map((o,i)=>`<button class="ov-item" data-ex="${i}"><div class="no" style="font-size:18px">${o.icon}</div><div><b>${esc(o.label)}</b><span>${esc(o.sub)}</span></div></button>`).join('')}`;
-}
-function bindHome(v){
-  bindOpenRows(v);
-  $('[data-start]',v).onclick=()=>go('learn',null,'basic');
-  $('[data-shuffle]',v).onclick=()=>{ S.dailyOffset++; render(); };
-  const r1=$('[data-r15]',v); if(r1) r1.onclick=startRoutine;
-  const r2=$('[data-r15s]',v); if(r2) r2.onclick=()=>{ S.routineOffset=(S.routineOffset||0)+1; render(); };
-  const ob=$('[data-onb]',v); if(ob) ob.onclick=()=>showOnboarding();
-  const np=$('[data-newp2]',v); if(np) np.onclick=newProjectSheet;
-  v.querySelectorAll('[data-proj]').forEach(b=>b.onclick=()=>{ S.seg.write='proj'; go('write','p:'+b.dataset.proj); });
-  $('[data-daily]',v).onclick=()=>{ const p=DAILY[(DAY_KEY+S.dailyOffset)%DAILY.length]; newWriting({genre:p.g, prompt:p.t}); };
-  v.querySelectorAll('[data-ex]').forEach(b=>b.onclick=()=>{ const g=EXTRAS[+b.dataset.ex].go; if(g) go(g[0],g[1],g[2]); else window.scrollTo({top:0,behavior:'smooth'}); });
-  v.querySelectorAll('[data-ov]').forEach(b=>b.onclick=()=>{ const g=OVERVIEW[+b.dataset.ov].go; go(g[0],g[1],g[2]); });
-}
 
 /* ---- 4. 벤치마크 ---- */
-function benchHTML(){
-  const rows=[
-    ['Sudowrite','소설 특화 AI. 초고 생성, 장면 확장, 원고 전체를 읽는 피드백 채팅','유료 전용, 영어 중심, AI가 문장을 생성해 주는 기능이 중심'],
-    ['ProWritingAid','문법·스타일 교정, 20여 종의 글쓰기 리포트, 줄거리·인물에 대한 구조 피드백','영어 중심, 교정·분석 위주라 배움의 순서(커리큘럼)는 없음'],
-    ['국내 "AI 글쓰기 도우미"류 앱','글 생성, 재작성, 맞춤법 교정, 이메일·SNS 글 작성','대신 써 주기 중심, 창작 장르별 학습이나 합평 구조 없음'],
-    ['범용 AI 챗봇','무엇이든 질문하고 글을 받아볼 수 있음','배움의 구조가 없고, 대신 써 주는 데 의존하기 쉬움']
-  ];
-  return `<button class="back" data-back>‹ 개요</button>
-  <h2 style="margin-top:4px">4. 벤치마크</h2>
-  <p class="muted small" style="margin:0 0 8px">구글플레이·앱스토어와 웹의 대표적인 AI 글쓰기 도구를 2026년 11월 기준으로 살펴봤어요. (스토어 전수 조사는 아니에요.)</p>
-  <div class="card"><table class="bm"><tr><th>앱</th><th>주요 기능</th><th>한계</th></tr>${rows.map(r=>`<tr><td><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join('')}</table></div>
-  <h2>이 앱의 차이</h2>
-  <div class="card"><ul style="padding-left:20px;margin:0">
-    <li><b>대신 쓰지 않음</b> — AI는 질문·합평·방향 제시만 하고, 모든 문장은 사용자가 씀 (개요 2)</li>
-    <li><b>입문자 기초 + 문창과 전공 커리큘럼</b> — 배우는 순서가 있음 (개요 1, 5)</li>
-    <li><b>장르마다 다른 쓰기 화면</b> (개요 3)</li>
-    <li><b>현직 작가 관점별 합평</b> (개요 7)</li>
-    <li><b>한국어 창작과 서·논술형 대비</b> (개요 +α)</li>
-  </ul></div>`;
-}
 
 /* ============ 배우기 (1 기초 / 5 전공) ============ */
-function trackHTML(t){
-  const done=t.lessons.filter(l=>S.profile.lessonsDone[l.id]).length;
-  return `<div class="track"><div class="track-head"><div><h3>${esc(t.name)}</h3><div class="course">${esc(t.course)}</div></div>
-    <div style="text-align:right;min-width:64px"><span class="small muted">${done}/${t.lessons.length}</span><div class="bar"><i style="width:${done/t.lessons.length*100}%"></i></div></div></div>
-    ${t.lessons.map((l,i)=>`<button class="lesson-row ${S.profile.lessonsDone[l.id]?'done':''}" data-lesson="${l.id}"><span class="num">${S.profile.lessonsDone[l.id]?'✓':i+1}</span><span style="flex:1">${esc(l.title)}</span><span class="muted">›</span></button>`).join('')}</div>`;
-}
-function learnHTML(){
-  const seg=S.seg.learn;
-  return `<div class="seg"><button data-seg="basic" class="${seg==='basic'?'on':''}">1 · 글쓰기 기초</button><button data-seg="major" class="${seg==='major'?'on':''}">5 · 문창과 전공</button></div>
-  ${seg==='basic'?`<p class="muted small" style="margin:8px 0">글쓰기를 처음 배우는 사람을 위한 핵심 배움이에요. 순서대로 하나씩 해 보세요.</p>${trackHTML(BASICS)}`:
-  `<p class="muted small" style="margin:8px 0">대학 문예창작과에서 실제로 배우는 전공 과목들이에요. 과목마다 무엇을 배우는지 읽고, 과제를 쓰고, 작가 피드백을 받아 보세요.</p>${COURSES.map(trackHTML).join('')}`}`;
-}
-function bindLearn(v){
-  v.querySelectorAll('[data-seg]').forEach(b=>b.onclick=()=>{ S.seg.learn=b.dataset.seg; render(); });
-  v.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>{ S.sub=b.dataset.lesson; render(); });
-}
-function lessonHTML(id){
-  const l=LESSON_MAP[id]; const done=!!S.profile.lessonsDone[id];
-  const linked=Object.values(S.writings).filter(w=>w.lessonId===id).sort((a,b)=>b.updatedAt-a.updatedAt);
-  return `<div class="lesson"><button class="back" data-back>‹ ${esc(l.track.name)}</button>
-  <div class="small muted">${esc(l.track.name)} · ${l.idx+1}강</div><h1>${esc(l.title)}</h1>
-  <div class="card"><p>${esc(l.concept)}</p><ul>${l.points.map(p=>`<li>${esc(p)}</li>`).join('')}</ul></div>
-  ${l.before||l.after?`<div class="ex">${l.before?`<div class="b"><small>이렇게 쓰기 쉬워요</small>${esc(l.before)}</div>`:''}${l.after?`<div class="a"><small>이렇게 바꿔 볼 수 있어요</small>${esc(l.after)}</div>`:''}</div>`:''}
-  <h2>과제</h2><div class="task">${esc(l.task)}</div>
-  <p class="small muted">권장 분량: 공백 제외 ${l.min}자 이상 · 채우면 자동으로 완료돼요.</p>
-  <button class="btn primary block" data-startl>과제 쓰기 시작</button>
-  ${linked.length?`<h2>이 레슨에서 쓴 글</h2>${linked.map(writingRow).join('')}`:''}
-  <button class="btn ghost block" data-done style="margin-top:12px">${done?'완료 표시 취소':'이 레슨 완료로 표시'}</button></div>`;
-}
 function bindLesson(v){
   const id=S.sub, l=LESSON_MAP[id];
   bindBack(v); bindOpenRows(v);
@@ -757,30 +642,7 @@ function bindLesson(v){
 }
 
 /* ============ 쓰기 (2 협동 · 3 장르 · 7 피드백) ============ */
-function writingRow(w){
-  return `<button class="list-item" data-open="${esc(w.id)}"><div class="grow"><div class="title">${esc(w.title||'제목 없음')}</div>
-    <div class="sub"><span class="tag ${esc(w.genre)}">${esc(GENRES[w.genre]?.name||'자유')}</span> ${fmtDate(w.updatedAt)} · ${charsNoSp(w.body)}자${(w.feedbacks||[]).length?` · 피드백 ${w.feedbacks.length}`:''}</div></div><span class="muted">›</span></button>`;
-}
 function bindOpenRows(v){ v.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>go('write',b.dataset.open)); }
-function writeListHTML(){
-  const ws=Object.values(S.writings).sort((a,b)=>b.updatedAt-a.updatedAt);
-  const seg=`<div class="seg"><button data-wseg="mine" class="${S.seg.write==='mine'?'on':''}">나의 글</button><button data-wseg="proj" class="${S.seg.write==='proj'?'on':''}">투고작 프로젝트</button></div>`;
-  if(S.seg.write==='proj') return seg+projListHTML();
-  return `${seg}<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><h2 style="margin:0">나의 글</h2><button class="btn primary" data-new>+ 새 글</button></div>
-  <p class="muted small" style="margin:6px 0">장르를 고르면 그 장르에 맞는 쓰기 도구가 열려요. 쓰는 동안 AI 동료와 주고받거나(협동 글쓰기), 다 쓰고 작가 피드백을 받을 수 있어요.</p>
-  ${ws.length?ws.map(writingRow).join(''):`<div class="empty"><div class="big">아직 쓴 글이 없어요</div>"+ 새 글"이나 기초 레슨으로 시작해 보세요.</div>`}`;
-}
-function bindWriteList(v){
-  v.querySelectorAll('[data-wseg]').forEach(b=>b.onclick=()=>{ S.seg.write=b.dataset.wseg; render(); });
-  bindOpenRows(v); const n=$('[data-new]',v); if(n) n.onclick=pickGenreThenNew;
-  const np=$('[data-newp]',v); if(np) np.onclick=newProjectSheet;
-  v.querySelectorAll('[data-proj]').forEach(b=>b.onclick=()=>{ S.sub='p:'+b.dataset.proj; render(); });
-}
-function pickGenreThenNew(){
-  sheet(`<h3>어떤 장르로 쓸까요?</h3><p class="small muted">장르마다 쓰기 도구가 달라요.</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
-    ${Object.entries(GENRES).map(([k,g])=>`<button class="btn block" data-g="${k}">${esc(g.name)}</button>`).join('')}</div>`,
-  (el,close)=>el.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{ close(); newWriting({genre:b.dataset.g}); }));
-}
 function newWriting(o){
   const w={id:uid(), genre:o.genre||'free', title:o.title||'', body:'', prompt:o.prompt||'', lessonId:o.lessonId||'', problemId:o.problemId||'', ref:o.ref||null,
     projectId:o.projectId||'', timerMin:o.timerMin||0, meta:{}, versions:[], collab:[], feedbacks:[], createdAt:Date.now(), updatedAt:Date.now()};
@@ -822,108 +684,6 @@ function genreLive(v,w){
   }
 }
 
-function editorHTML(w){
-  const L=w.lessonId&&LESSON_MAP[w.lessonId], P=w.problemId&&PROBLEM_MAP[w.problemId];
-  return `<div class="ed-top"><button class="back" data-back>‹ 나의 글</button>
-    <div style="display:flex;gap:6px"><button class="btn sm" data-versions>퇴고 ${(w.versions||[]).length}</button><button class="btn sm" data-del>삭제</button></div></div>
-  <div class="genre-pick">${Object.entries(GENRES).map(([k,g])=>`<button class="chip ${w.genre===k?'on':''}" data-genre="${k}">${esc(g.name)}</button>`).join('')}</div>
-  ${L?`<div class="ref"><b>레슨 과제</b> · ${esc(L.title)}<div class="small" style="margin-top:4px">${esc(L.task)}</div></div>`:''}
-  ${P?`<div class="ref"><b>${esc(P.type)} · ${esc(P.title)}</b><div class="passage" style="background:#fffaf0">${esc(P.passage)}</div><div><b>문제</b> ${esc(P.question)}</div></div>`:''}
-  ${w.prompt?`<div class="ref"><b>글감</b><div style="margin-top:3px">${esc(w.prompt)}</div></div>`:''}
-  ${w.ref?`<div class="ref"><b>수집한 문구</b>${w.ref.source?` · <span class="small">${esc(w.ref.source)}</span>`:''}<div class="q" style="margin-top:4px">${esc(w.ref.text)}</div></div>`:''}
-  ${genreToolsHTML(w)}
-  <div class="card tight" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span class="small">🗂️ ${w.projectId&&S.projects[w.projectId]?`투고작: <b>${esc(S.projects[w.projectId].title)}</b>${w.kind==='draft'?' · 초고':''}`:'투고작에 넣지 않음'}</span>
-    <span style="display:flex;gap:6px">${w.genre==='poem'&&w.projectId?`<button class="btn sm ${w.final?'dark':''}" data-final>${w.final?'✓ 완성작':'완성작으로 표시'}</button>`:''}${w.kind==='draft'?'':`<button class="btn sm" data-toproj>${w.projectId?'바꾸기':'투고작에 넣기'}</button>`}</span></div>
-  ${w.genre==='argument'||w.timerMin?`<div class="card tight" style="display:flex;justify-content:space-between;align-items:center"><span class="small">⏱ ${w.genre==='argument'?'실전':'집중'} 타이머 <span class="timer" data-timer></span></span><button class="btn sm" data-timerbtn></button></div>`:''}
-  <input class="title-in" data-title placeholder="제목" value="${esc(w.title)}">
-  <textarea class="body-in" data-body placeholder="여기에 당신의 문장을 쓰세요.">${esc(w.body)}</textarea>
-  <div class="ed-meta"><span data-count></span><span data-saved>저장됨</span></div>
-  <div class="ed-actions">
-    <button class="btn full" data-collab>🤝 AI 동료에게 넘기기 (협동 글쓰기)</button>
-    <button class="btn" data-stuck>막혔어요</button>
-    <button class="btn" data-revise>퇴고본 저장</button>
-    <button class="btn primary full block" data-review>작가 피드백 받기</button>
-  </div>
-  <div data-area></div>
-  ${(w.collab||[]).length?`<h2>협동 기록</h2><p class="small muted" style="margin:-4px 0 6px">내가 쓰고 → AI 동료가 묻고 → 내가 이어 쓰는 흐름이에요.</p><div class="collab">${w.collab.map(collabTurnHTML).join('')}</div>`:''}
-  ${(w.feedbacks||[]).length?`<h2>작가 피드백</h2>`:''}
-  <div data-fblist>${(w.feedbacks||[]).slice().reverse().map((f,i)=>feedbackHTML(f,i===0)).join('')}</div>`;
-}
-function collabTurnHTML(t){
-  if(t.role==='me') return `<div class="turn me"><div class="av">나</div><div class="bub"><div class="kind" style="color:var(--red)">내가 쓴 부분 · ${t.chars}자까지</div><div class="small" style="font-family:var(--serif)">${esc(t.excerpt)}</div></div></div>`;
-  return `<div class="turn"><div class="av">🤝</div><div class="bub"><div class="kind">${esc(t.kind||'AI 동료')}</div>${t.focus?`<div class="quote" data-find="${esc(t.focus)}">“${esc(t.focus)}”</div>`:''}<div>${esc(t.text)}</div>${t.next?`<div class="small" style="color:var(--red);margin-top:4px">→ ${esc(t.next)}</div>`:''}</div></div>`;
-}
-function feedbackHTML(f,open){
-  const P=PERSONAS[f.persona]||{icon:'💬',name:'AI'}, d=f.data||{};
-  const quote=q=>q?`<div class="quote" data-find="${esc(q)}">“${esc(q)}”</div>`:'';
-  return `<div class="fb"><button class="fb-head" data-toggle><span><b>${P.icon} ${esc(P.name)}</b> <span class="small muted">· ${fmtTime(f.at)} · ${f.chars}자 시점</span></span><span class="muted">${open?'▾':'▸'}</span></button>
-  <div class="fb-body" ${open?'':'hidden'}>
-    ${d.summary?`<p style="font-family:var(--serif);font-size:16px;margin:10px 0 0">${esc(d.summary)}</p>`:''}
-    ${(d.strengths||[]).length?`<div class="fb-sec good"><b>잘된 점</b>${d.strengths.map(s=>`<div class="fb-item">${quote(s.quote)}<div>${esc(s.why)}</div></div>`).join('')}</div>`:''}
-    ${(d.questions||[]).length?`<div class="fb-sec q"><b>작가에게 묻는 질문</b><ol style="padding-left:20px;margin:0">${d.questions.map(q=>`<li style="margin:5px 0">${esc(q)}</li>`).join('')}</ol></div>`:''}
-    ${(d.improvements||[]).length?`<div class="fb-sec fix"><b>다듬어 볼 곳</b>${d.improvements.map(s=>`<div class="fb-item">${quote(s.quote)}<div>${esc(s.issue)}</div>${s.direction?`<div class="small" style="color:var(--red);margin-top:2px">→ ${esc(s.direction)}</div>`:''}</div>`).join('')}</div>`:''}
-    ${(d.rubric||[]).length?`<div class="fb-sec"><b>채점 기준표</b><table class="rub">${d.rubric.map(r=>`<tr><td><b>${esc(r.item)}</b><div class="small muted">${esc(r.comment||'')}</div></td><td class="s">${esc(r.score)}/${esc(r.max||10)}</td></tr>`).join('')}</table><div class="small muted" style="margin-top:6px">연습용 추정 점수예요.</div></div>`:''}
-    ${d.growth?`<div class="fb-sec q"><b>지난 피드백 이후 발전한 점</b><div>${esc(d.growth)}</div></div>`:''}
-    ${d.mission?`<div class="mission"><b>다음 퇴고 미션</b>${esc(d.mission)}</div>`:''}
-  </div></div>`;
-}
-function bindEditor(v,w){
-  w.meta=w.meta||{};
-  const title=$('[data-title]',v), body=$('[data-body]',v), count=$('[data-count]',v), saved=$('[data-saved]',v);
-  let t=null;
-  const upd=()=>{ count.textContent=`${chars(body.value)}자 · 공백 제외 ${charsNoSp(body.value)}자`; };
-  const autosize=()=>{ body.style.height='auto'; body.style.height=Math.max(body.scrollHeight, window.innerHeight*0.42)+'px'; };
-  const commit=()=>{ clearTimeout(t); t=null;
-    if(w.title===title.value && (w._savedBody===undefined||w._savedBody===body.value) && !S.metaDirty){ w._savedBody=undefined; return Promise.resolve(); }
-    logChars(charsNoSp(body.value)-charsNoSp(w._savedBody??w.body)); w._savedBody=undefined;
-    S.metaDirty=false; w.title=title.value; w.body=body.value; w.updatedAt=Date.now(); markDay(); autoComplete(w);
-    saved.textContent='저장 중…';
-    return Store.save('writings',w).then(()=>saved.textContent='저장됨').catch(()=>saved.textContent='저장 실패');
-  };
-  const sched=()=>{ saved.textContent='입력 중…'; clearTimeout(t); t=setTimeout(commit,1200); };
-  S.editorCommit=commit; S.sched=sched;
-  title.oninput=sched;
-  if(w._savedBody===undefined) w._savedBody=w.body;
-  body.oninput=()=>{ upd(); autosize(); if(w._savedBody===undefined) w._savedBody=w.body; w.body=body.value; genreLive(v,w); sched(); };
-  v.querySelectorAll('[data-meta]').forEach(i=>i.oninput=()=>{ w.meta[i.dataset.meta]=i.value; S.metaDirty=true; if(['conds','target'].includes(i.dataset.meta)) genreLive(v,w); sched(); });
-  v.querySelectorAll('[data-ins]').forEach(b=>b.onclick=()=>{
-    const n=(body.value.match(/^S#/gm)||[]).length+1;
-    const txt={scene:`S#${n}. 장소 - 시간\n`, action:'(지문) ', line:'인물: '}[b.dataset.ins];
-    const s=body.selectionStart??body.value.length; const pre=body.value.slice(0,s); const lead=pre&&!pre.endsWith('\n')?'\n':'';
-    body.value=pre+lead+txt+body.value.slice(s); const pos=(pre+lead+txt).length; body.focus(); body.setSelectionRange(pos,pos); body.oninput();
-  });
-  upd(); genreLive(v,w); setTimeout(autosize,0);
-  $('[data-back]',v).onclick=()=>{ commit(); S.sub=null; render(); };
-  v.querySelectorAll('[data-genre]').forEach(b=>b.onclick=()=>{ commit(); w.genre=b.dataset.genre; w.updatedAt=Date.now(); Store.save('writings',w); render(); });
-  $('[data-del]',v).onclick=()=>confirmSheet('이 글을 삭제할까요? 되돌릴 수 없어요.','삭제',()=>{ clearTimeout(t); delete S.writings[w.id]; Store.del('writings',w.id); S.sub=null; render(); toast('삭제했어요'); });
-  $('[data-revise]',v).onclick=()=>{ commit(); if(!body.value.trim()) return toast('먼저 글을 써 주세요');
-    const last=(w.versions||[]).slice(-1)[0]; if(last&&last.body===body.value) return toast('지난 퇴고본과 같아요');
-    (w.versions||(w.versions=[])).push({at:Date.now(), body:body.value}); if(w.versions.length>15) w.versions.shift();
-    Store.save('writings',w); toast(`퇴고본 ${w.versions.length}번째를 저장했어요`); $('[data-versions]',v).textContent=`퇴고 ${w.versions.length}`; };
-  $('[data-versions]',v).onclick=()=>showVersions(w);
-  $('[data-review]',v).onclick=()=>{ commit(); pickPersona(w,v); };
-  $('[data-collab]',v).onclick=()=>{ commit(); collabTurn(w,v); };
-  $('[data-stuck]',v).onclick=()=>{ commit(); stuckHelp(w); };
-  const fz=$('[data-final]',v); if(fz) fz.onclick=()=>{ commit(); w.final=!w.final; Store.save('writings',w); render(); toast(w.final?'투고 묶음의 완성작으로 표시했어요':'완성 표시를 뺐어요'); };
-  const tp=$('[data-toproj]',v); if(tp) tp.onclick=()=>{ commit(); const ps=Object.values(S.projects).filter(p=>p.stage!=='ready');
-    sheet(`<h3>어느 투고작에 넣을까요?</h3>${ps.map(p=>`<button class="opt" data-pp="${esc(p.id)}"><div class="ic">🗂️</div><div><b>${esc(p.title)}</b><span>${esc(GENRES[p.genre].name)}</span></div></button>`).join('')||'<p class="small muted">아직 투고작 프로젝트가 없어요.</p>'}
-      ${w.projectId?'<button class="btn block" data-pp="">투고작에서 빼기</button>':''}<button class="btn primary block" data-newpp style="margin-top:8px">+ 새 투고작 만들기</button>`,
-    (el,close)=>{ el.querySelectorAll('[data-pp]').forEach(b=>b.onclick=()=>{ w.projectId=b.dataset.pp; if(w.projectId) w.genre=S.projects[w.projectId].genre; Store.save('writings',w); close(); render(); toast(w.projectId?'투고작에 넣었어요':'투고작에서 뺐어요'); });
-      $('[data-newpp]',el).onclick=()=>{ close(); newProjectSheet(); }; }); };
-  v.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{ const bd=b.nextElementSibling; bd.hidden=!bd.hidden; b.lastElementChild.textContent=bd.hidden?'▸':'▾'; });
-  v.querySelectorAll('[data-find]').forEach(q=>q.onclick=()=>{ const s=q.dataset.find, i=body.value.indexOf(s);
-    if(i<0) return toast('본문에서 그 구절을 찾지 못했어요(이미 고쳤을지도요)');
-    body.focus(); body.setSelectionRange(i,i+s.length); body.scrollIntoView({block:'center'}); });
-  const tb=$('[data-timerbtn]',v);
-  if(tb){
-    const mins=w.timerMin||(w.problemId?PROBLEM_MAP[w.problemId].min:40);
-    const tick=()=>{ const el=$('[data-timer]',v); if(!el) return; const on=S.examEnd&&S.examFor===w.id; const left=on?Math.max(0,S.examEnd-Date.now()):mins*60e3;
-      el.textContent=`${String(Math.floor(left/60e3)).padStart(2,'0')}:${String(Math.floor(left%60e3/1e3)).padStart(2,'0')}`; tb.textContent=on?'멈춤':`${mins}분 시작`;
-      if(on&&left<=0){ S.examEnd=null; toast('⏱ 시간 종료! 조건을 다시 확인해 보세요.',4000); tick(); } };
-    tick(); S.timers.exam=setInterval(tick,1000);
-    tb.onclick=()=>{ if(S.examEnd&&S.examFor===w.id) S.examEnd=null; else { S.examEnd=Date.now()+mins*60e3; S.examFor=w.id; } tick(); };
-  }
-}
 function autoComplete(w){
   if(!w.lessonId||S.profile.lessonsDone[w.lessonId]) return;
   const L=LESSON_MAP[w.lessonId]; if(L&&charsNoSp(w.body)>=L.min){ S.profile.lessonsDone[w.lessonId]=Date.now(); Store.saveProfile(); toast(`「${L.title}」 완료!`); }
@@ -1000,13 +760,6 @@ JSON으로만 답하세요: {"diagnosis":"지금 왜 막혔을 것 같은지 한
   }catch(e){ if(c.isConnected) c.innerHTML=`${aiNoteHTML(e)}`; }
 }
 /* ---- 7. 작가 피드백 ---- */
-function pickPersona(w,v){
-  if(charsNoSp(w.body)<20) return toast('피드백을 받으려면 조금 더 써 주세요 (20자 이상)');
-  const order=PERSONA_ORDER[w.genre]||PERSONA_ORDER.free;
-  sheet(`<h3>어떤 작가에게 피드백을 받을까요?</h3><p class="small muted">작가마다 보는 곳이 달라요.</p>
-    ${order.map(k=>{const P=PERSONAS[k];return `<button class="opt" data-p="${k}"><div class="ic">${P.icon}</div><div><b>${esc(P.name)}</b><span>${esc(P.desc)}</span></div></button>`;}).join('')}`,
-  (el,close)=>el.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{ close(); runFeedback(w,b.dataset.p,v); }));
-}
 async function runFeedback(w,key,v){
   if(S.busy) return; S.busy=true;
   const P=PERSONAS[key]; const area=$('[data-area]',v);
@@ -1038,7 +791,7 @@ strengths 2~3개, improvements 2~4개.`;
 }
 
 /* ============ 영감 (6 소재·영감 / 8 책 문구) ============ */
-function inspHTML_v1(){
+function inspHTMLBase(){
   const seg=S.seg.insp;
   const head=`<div class="seg"><button data-seg="idea" class="${seg==='idea'?'on':''}">6 · 소재·영감</button><button data-seg="quote" class="${seg==='quote'?'on':''}">8 · 책 문구 수집</button></div>`;
   if(seg==='idea'){
@@ -1114,10 +867,6 @@ JSON으로만 답하세요: {"thread":"이 문구들을 꿰는 공통의 실 한
       newWriting({genre:GENRES[x.genre]?x.genre:'free', title:x.title, prompt:`${x.angle} (질문: ${x.question})`, ref:{text:qs.map(q=>q.text).join('\n\n'), source:qs.map(q=>q.source).filter(Boolean).join(' / ')}}); });
   }catch(e){ if(c.isConnected) c.innerHTML=`${aiNoteHTML(e)}`; }
 }
-function pickGenreFor(cb){
-  sheet(`<h3>어떤 장르로 쓸까요?</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">${Object.entries(GENRES).map(([k,g])=>`<button class="btn block" data-g="${k}">${esc(g.name)}</button>`).join('')}</div>`,
-  (el,close)=>el.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{ close(); cb(b.dataset.g); }));
-}
 async function shrinkImage(file){
   const url=URL.createObjectURL(file);
   try{ const img=await new Promise((res,rej)=>{const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url;});
@@ -1126,7 +875,7 @@ async function shrinkImage(file){
   }catch(e){ return file; } finally{ URL.revokeObjectURL(url); }
 }
 /* ---- 6. 소재 발전 화면 ---- */
-function ideaHTML_v1(i){
+function ideaHTMLBase(i){
   const d=i.dev;
   return `<button class="back" data-back>‹ 소재·영감</button>
   <div class="card"><div class="small muted">${fmtDate(i.at)} 담은 소재</div><textarea class="ans" data-itext style="font-size:17px;border:none;padding:4px 0;background:transparent">${esc(i.text)}</textarea>
@@ -1168,22 +917,7 @@ angles는 장르를 다르게 3개.`;
 }
 
 /* ============ +α 서·논술형 ============ */
-function examHTML(){
-  const mine=Object.values(S.writings).filter(w=>w.problemId);
-  return `<h2 style="margin-top:4px">+α 서·논술형 대비</h2>
-  <p class="muted small" style="margin:0 0 8px">수능이 서술형·논술형으로 바뀐다고 가정하고 연습하는 공간이에요. 유형별 문항을 실전 타이머로 풀고, 채점관 관점의 기준표 피드백을 받아요.</p>
-  <div class="note">기초를 먼저 다지고 싶다면 배우기 → 글쓰기 기초의 「한 문장을 바르게」, 「문단 만들기」, 「무엇을 말하고 싶은가」를 추천해요.</div>
-  ${PROBLEMS.map(p=>{ const n=mine.filter(w=>w.problemId===p.id).length;
-    return `<button class="list-item" data-prob="${p.id}"><div class="grow"><div class="title">${esc(p.title)}</div><div class="sub"><span class="tag argument">${esc(p.type)}</span> ${p.target}자 · ${p.min}분${n?` · ${n}번 풀었음`:''}</div></div><span class="muted">›</span></button>`;}).join('')}
-  <button class="btn block" data-free style="margin-top:12px">내 문제로 논술 연습하기</button>
-  <h2>논술 레슨</h2>${trackHTML(ARG)}`;
-}
-function bindExam(v){
-  v.querySelectorAll('[data-prob]').forEach(b=>b.onclick=()=>{ S.sub=b.dataset.prob; render(); });
-  $('[data-free]',v).onclick=()=>newWriting({genre:'argument'});
-  v.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>go('learn',b.dataset.lesson));
-}
-function problemHTML_v1(id){
+function problemHTMLBase(id){
   const p=PROBLEM_MAP[id]; const mine=Object.values(S.writings).filter(w=>w.problemId===id).sort((a,b)=>b.updatedAt-a.updatedAt);
   return `<button class="back" data-back>‹ 서·논술형 대비</button>
   <div class="small muted">${esc(p.type)}</div><h2 style="margin-top:2px">${esc(p.title)}</h2>
@@ -1265,36 +999,8 @@ function showOnboarding(force){
   };
   sheet('', (el,close)=>draw(el,close));
 }
-function firstPathSheet(){
-  const ob=S.profile.onboard; const g=ob.genres[0];
-  sheet(`<h3>이렇게 시작해 보세요</h3>
-    <div class="opt" style="display:block"><b>① 매일: 오늘의 ${ob.minutes}분</b><span>홈 맨 위 카드. 요일마다 할 일이 정해져 있어요 (월 감각 · 화 장면 · 수 인물 · 목 문구 · 금 퇴고 · 토 투고작 · 일 읽기).</span></div>
-    <div class="opt" style="display:block"><b>② 이번 주: 투고작 프로젝트 만들기</b><span>${esc(GENRES[g].name)}로 공모전 투고작을 하나 정해 두면, 매일 쓴 조각이 그 작품으로 모여요.</span></div>
-    <div class="opt" style="display:block"><b>③ 틈틈이: 투고 준비 레슨</b><span>15분짜리로 나눈 등단 대비 레슨이에요. 배우기 → 문창과 전공 맨 위.</span></div>
-    <button class="btn primary block" data-p style="margin-top:10px">투고작 프로젝트 만들기</button><button class="btn ghost block" data-x>나중에</button>`,
-  (el,close)=>{ $('[data-x]',el).onclick=close; $('[data-p]',el).onclick=()=>{ close(); newProjectSheet(); }; });
-}
 
 /* ---- 오늘의 15분 카드 ---- */
-function today15HTML(){
-  const r=todayRoutine(); const doneToday=(S.profile.log||{})[today()]>0;
-  const dn=['일','월','화','수','목','금','토'][r.dow];
-  return `<div class="card hero"><div class="label">오늘의 ${r.mins}분 · ${dn}요일 · ${esc(r.name)}${r.kind==='write'?' · '+esc(GENRES[r.g].name):''}</div>
-    <div class="prompt" style="font-size:17.5px">${esc(r.task)}</div>
-    <div class="row"><button class="btn primary" data-r15>${doneToday?'오늘 한 번 더':'⏱ '+r.mins+'분 시작'}</button>${r.kind==='write'?'<button class="btn light" data-r15s>다른 장르</button>':''}</div>
-    ${weekDotsHTML(true)}</div>`;
-}
-function startRoutine(){
-  const r=todayRoutine();
-  if(r.kind==='quote' || r.kind==='read'){ go('insp',null,'quote'); toast(r.kind==='read'?'읽다가 남은 문구를 담아 보세요':'문구를 담은 뒤 "변주"를 눌러 보세요'); return; }
-  if(r.kind==='revise'){
-    const w=Object.values(S.writings).filter(w=>charsNoSp(w.body)>0).sort((a,b)=>b.updatedAt-a.updatedAt)[0];
-    if(!w){ toast('아직 퇴고할 글이 없어요. 오늘은 새 조각을 써 볼까요?'); return newWriting({genre:r.g, prompt:ROUTINE_TASK[r.g][2], timerMin:r.mins}); }
-    S.examEnd=Date.now()+r.mins*60e3; S.examFor=w.id; w.timerMin=r.mins; go('write',w.id); toast('퇴고본 저장을 먼저 누르고 고쳐 보세요'); return;
-  }
-  const proj=activeProject(r.g);
-  newWriting({genre:r.g, title:`${r.name} 조각`, prompt:r.task, timerMin:r.mins, projectId: r.dow===6&&proj?proj.id:''});
-}
 
 /* ---- 투고작 프로젝트 ---- */
 const STAGES=[['collect','조각 모으기'],['draft','초고 잇기'],['revise','퇴고'],['ready','투고 준비 완료']];
@@ -1314,12 +1020,6 @@ function projStage(p){
   if(d) return 'draft';
   return 'collect';
 }
-function projCardHTML(p){
-  const pr=projProgress(p), st=projStage(p), si=STAGES.findIndex(s=>s[0]===st);
-  return `<button class="list-item" data-proj="${esc(p.id)}" style="display:block"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(p.title)}</b><span class="tag ${esc(p.genre)}">${esc(GENRES[p.genre].name)}</span></div>
-    <div class="sub">${STAGES.map((s,i)=>`<span style="${i===si?'color:var(--red);font-weight:700':i<si?'color:var(--green)':''}">${i<si?'✓ ':''}${s[1]}</span>`).join(' › ')}</div>
-    <div class="prog"><i style="width:${pr.pct}%"></i></div><div class="sub">${esc(pr.label)}${p.contest?` · ${esc(p.contest)}`:''}</div></button>`;
-}
 function newProjectSheet(){
   const ob=S.profile.onboard||{}; let g=(ob.genres||LIT)[0];
   const draw=(el,close)=>{ el.innerHTML=`<div class="grab"></div><h3>투고작 프로젝트 만들기</h3><p class="small muted">매일 쓴 조각을 모아 공모전에 낼 한 작품으로 키워요.</p>
@@ -1334,13 +1034,7 @@ function newProjectSheet(){
   };
   sheet('', draw);
 }
-function projListHTML(){
-  const ps=Object.values(S.projects).sort((a,b)=>b.at-a.at);
-  return `<p class="muted small" style="margin:6px 0">투고작 하나를 정하고, 매일의 짧은 조각을 모아 → 초고로 잇고 → 퇴고해서 → 투고 준비를 마쳐요.</p>
-  <button class="btn primary block" data-newp>+ 새 투고작 프로젝트</button>
-  ${ps.length?ps.map(projCardHTML).join(''):`<div class="empty"><div class="big">아직 투고작이 없어요</div>공모전에 내 보고 싶은 작품 하나를 정해 보세요.</div>`}`;
-}
-function projectHTML_v1(p){
+function projectHTMLBase(p){
   const ws=projWritings(p).filter(w=>w.id!==p.draftId); const d=p.draftId&&S.writings[p.draftId];
   const st=projStage(p), si=STAGES.findIndex(s=>s[0]===st), pr=projProgress(p), c=CONTEST[p.genre];
   const judged=projWritings(p).some(w=>(w.feedbacks||[]).some(f=>f.persona==='judge'));
@@ -1383,23 +1077,10 @@ function weekDays(){ // 이번 주 월~일 날짜 문자열
   const d=kstDate(); const dow=(d.getUTCDay()+6)%7; const out=[];
   for(let i=0;i<7;i++) out.push(kstDate(i-dow).toISOString().slice(0,10)); return out;
 }
-function weekDotsHTML(onDark){
-  const log=S.profile.log||{}; const days=weekDays(); const done=days.filter(d=>(log[d]||0)>0).length; const goal=(S.profile.onboard||{}).weekGoal||5;
-  const t=today();
-  return `<div style="margin-top:14px;display:flex;align-items:center;gap:10px"><div style="display:flex;gap:5px">${days.map((d,i)=>`<span title="${d}" style="width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:10.5px;${(log[d]||0)>0?'background:var(--red);color:#fff':d===t?`border:1.5px solid ${onDark?'#e7a79c':'var(--red)'};color:${onDark?'#f6f1e7':'var(--ink)'}`:`background:${onDark?'rgba(255,255,255,.12)':'#ebe4d5'};color:${onDark?'#cfc6b6':'var(--muted)'}`}">${'월화수목금토일'[i]}</span>`).join('')}</div>
-  <span style="font-size:12.5px;${onDark?'color:#d9cfbf':'color:var(--muted)'}">이번 주 ${done}/${goal}일${done>=goal?' 🎉':''}</span></div>`;
-}
 function logChars(delta){
   if(delta<=0) return; const d=today(); const log=S.profile.log||(S.profile.log={}); log[d]=(log[d]||0)+delta;
   const keys=Object.keys(log).sort(); while(keys.length>120) delete log[keys.shift()];
   clearTimeout(S._logT); S._logT=setTimeout(()=>Store.saveProfile(),4000);
-}
-function weeklyChartHTML(){
-  const log=S.profile.log||{}; const weeks=[];
-  for(let w=7;w>=0;w--){ let sum=0; for(let i=0;i<7;i++){ const k=kstDate(-(w*7)-((kstDate().getUTCDay()+6)%7)+i).toISOString().slice(0,10); sum+=log[k]||0; } weeks.push(sum); }
-  const max=Math.max(1,...weeks);
-  return `<div class="card"><b class="small">주별로 쓴 글자 (최근 8주)</b><div style="display:flex;align-items:flex-end;gap:6px;height:110px;margin-top:10px">${weeks.map((n,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%"><span style="font-size:10px;color:var(--muted)">${n?n.toLocaleString():''}</span><div style="width:100%;border-radius:5px 5px 0 0;background:${i===7?'var(--red)':'var(--ink2)'};height:${Math.max(2,n/max*80)}px"></div></div>`).join('')}</div>
-  <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-top:4px"><span>7주 전</span><span>이번 주</span></div></div>`;
 }
 function badges(){
   const ws=Object.values(S.writings), ps=Object.values(S.projects), total=ws.reduce((a,w)=>a+charsNoSp(w.body),0), st=streak();
@@ -1409,28 +1090,8 @@ function badges(){
     ['🎓','레슨 10개', Object.keys(S.profile.lessonsDone||{}).length>=10],['🗂️','첫 투고작', ps.length>0],['🧵','첫 초고', ps.some(p=>p.draftId)],['🏅','투고 준비 완료', ps.some(p=>p.stage==='ready')]
   ];
 }
-function badgesHTML(){
-  const b=badges(); return `<div class="card"><b class="small">배지 ${b.filter(x=>x[2]).length}/${b.length}</b><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px">${b.map(([i,n,ok])=>`<div style="text-align:center;opacity:${ok?1:.32}"><div style="font-size:24px;filter:${ok?'none':'grayscale(1)'}">${i}</div><div style="font-size:11px">${n}</div></div>`).join('')}</div></div>`;
-}
 
 /* ============ 덧붙임: 나의 문체 ============ */
-function styleHTML(){
-  const ws=Object.values(S.writings), eligible=ws.filter(w=>charsNoSp(w.body)>=150);
-  const gc={}; ws.forEach(w=>gc[w.genre]=(gc[w.genre]||0)+1); const gmax=Math.max(1,...Object.values(gc));
-  const revs=ws.reduce((a,w)=>a+(w.versions||[]).length,0), fbs=ws.reduce((a,w)=>a+(w.feedbacks||[]).length,0);
-  const hist=S.profile.styleHistory||[], cur=hist.slice(-1)[0];
-  return `<h2 style="margin-top:4px">나의 기록 · 문체</h2><p class="muted small" style="margin:0 0 8px">문체는 한 번에 생기지 않아요. 쓰고, 피드백받고, 고친 흔적이 쌓여 만들어집니다. 분석된 문체는 이후 협동 글쓰기와 작가 피드백에 반영돼요.</p>
-  <div class="card tight" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="small">${S.profile.onboard?`${esc(GOALS[S.profile.onboard.goal]||'')} · ${S.profile.onboard.genres.map(g=>GENRES[g].name).join('·')} · 하루 ${S.profile.onboard.minutes}분`:'목표가 아직 없어요'}</span><button class="btn sm" data-onb>바꾸기</button></div>
-  <div class="card">${weekDotsHTML(false)}</div>
-  ${weeklyChartHTML()}
-  ${badgesHTML()}
-  ${appToolsHTML()}
-  <div class="stats"><div class="stat"><b>${ws.reduce((a,w)=>a+charsNoSp(w.body),0).toLocaleString()}</b><span>쓴 글자</span></div><div class="stat"><b>${revs}</b><span>퇴고</span></div><div class="stat"><b>${fbs}</b><span>피드백</span></div></div>
-  ${ws.length?`<div class="card"><b class="small">장르별 글</b>${Object.entries(GENRES).filter(([k])=>gc[k]).map(([k,g])=>`<div class="gbar"><span class="lab">${esc(g.name)}</span><span class="track2"><i style="width:${gc[k]/gmax*100}%"></i></span><span>${gc[k]}</span></div>`).join('')}</div>`:''}
-  <div data-area>${cur?styleCardHTML(cur):`<div class="card"><div class="empty" style="padding:14px 4px"><div class="big">문체 지도가 아직 비어 있어요</div>150자 이상 쓴 글이 3편 모이면 분석할 수 있어요. (지금 ${eligible.length}편)</div></div>`}</div>
-  <button class="btn ${eligible.length>=3?'primary':''} block" data-analyze ${eligible.length>=3?'':'disabled'}>${cur?'문체 다시 분석하기':'내 문체 분석하기'}</button>
-  ${hist.length>1?`<h2>문체의 변화</h2>${hist.slice(0,-1).reverse().map(h=>`<div class="card tight"><div class="small muted">${fmtDate(h.at)} · 글 ${h.count}편 기준</div><div class="kw">${(h.keywords||[]).map(k=>`<span style="background:#e9e2d3;color:var(--ink2)">${esc(k)}</span>`).join('')}</div></div>`).join('')}`:''}`;
-}
 function styleCardHTML(s){
   return `<div class="card"><div class="small muted">${fmtDate(s.at)} 분석 · 글 ${s.count}편 기준</div><div class="kw">${(s.keywords||[]).map(k=>`<span>${esc(k)}</span>`).join('')}</div>
     <div class="portrait">${esc(s.portrait||'')}</div>
@@ -1439,7 +1100,7 @@ function styleCardHTML(s){
     ${s.growth?`<div class="fb-sec q"><b>지난 분석 이후의 변화</b><div>${esc(s.growth)}</div></div>`:''}
     ${(s.experiments||[]).length?`<div class="mission"><b>다음 문체 실험</b><ol style="padding-left:18px;margin:4px 0 0">${s.experiments.map(x=>`<li style="margin:3px 0">${esc(x)}</li>`).join('')}</ol></div>`:''}</div>`;
 }
-function bindStyle_v1(v){
+function bindStyleBase(v){
   $('[data-onb]',v).onclick=()=>showOnboarding(true);
   bindAppTools(v);
   const b=$('[data-analyze]',v); if(!b) return;
@@ -1459,13 +1120,6 @@ JSON으로만 답하세요: {"keywords":["문체 키워드 4~5개"],"portrait":"
 }
 
 /* ============ [추가] 백업 코드 · 설치 ============ */
-function appToolsHTML(){
-  return `<div class="card"><b class="small">앱 · 데이터</b>
-    <p class="small muted" style="margin:4px 0 8px">${Store.mode==='db'?'지금은 claude.ai 계정에 저장되고 있어요.':'지금은 이 기기(브라우저)에 저장되고 있어요. 브라우저 데이터를 지우면 사라지니 가끔 백업해 두세요.'} 백업 코드로 claude.ai 버전과 설치형 앱 사이, 또는 다른 기기로 글을 옮길 수 있어요.</p>
-    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-bk>백업 코드 복사</button>${IS_PAGES?'<button class="btn sm" data-bkf>파일로 저장</button>':''}<button class="btn sm" data-rs>백업 불러오기</button></div>
-    ${IS_PAGES?`<div style="margin-top:10px">${S.installEvt?'<button class="btn primary sm" data-inst>홈 화면에 설치</button>':''}<p class="small muted" style="margin:6px 0 0">홈 화면에 추가: 안드로이드 크롬 ⋮ → 홈 화면에 추가 / 아이폰 사파리 공유 → 홈 화면에 추가</p><p class="small" style="margin:6px 0 0"><a href="${ARTIFACT_URL}" target="_blank" rel="noopener" style="color:var(--red)">AI 기능이 있는 claude.ai 버전 열기 ›</a></p></div>`:''}
-  </div>`;
-}
 function backupCode(){
   const data={app:'moongjakga', v:1, at:Date.now(), profile:S.profile, writings:S.writings, quotes:S.quotes, ideas:S.ideas, projects:S.projects};
   return 'MJK1:'+btoa(unescape(encodeURIComponent(JSON.stringify(data))));
@@ -1497,7 +1151,7 @@ if(IS_PAGES){
   window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); S.installEvt=e; if(S.tab==='style') render(); });
   if('serviceWorker' in navigator && location.protocol!=='file:') window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 }
-/* ================= v4 UI — 미니멀 종이 (이전 화면 함수를 덮어씀) ================= */
+/* ================= v4 UI — 미니멀 종이 (화면 함수) ================= */
 const IC = {
   back:'<path d="M15 5l-7 7 7 7"/>',
   more:'<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>',
@@ -1648,10 +1302,10 @@ function pickGenreFor(cb){
   sheet(`<h3>어떤 글을 쓸까요?</h3><p class="small muted">장르마다 쓰기 도구가 달라요.</p><div class="rows" style="margin-top:8px">${Object.entries(GENRES).map(([k,g])=>`<button class="row-item" data-g="${k}"><div class="grow"><div class="t">${esc(g.name)}</div></div>${svgI('chev')}</button>`).join('')}</div>`,
   (el,close)=>el.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{ close(); cb(b.dataset.g); }));
 }
-function inspHTML(){ return noEmoji(inspHTML_v1()).replace('6 · 소재·영감','소재·영감').replace('8 · 책 문구 수집','책 문구'); }
-function ideaHTML(i){ return noEmoji(ideaHTML_v1(i)); }
-function projectHTML(p){ return noEmoji(projectHTML_v1(p).replace(/✅/g,'<span class="ck on"></span>').replace(/⬜/g,'<span class="ck"></span>')); }
-function problemHTML(id){ return noEmoji(problemHTML_v1(id)).replace('<div class="task">','<div class="task-q">'); }
+function inspHTML(){ return noEmoji(inspHTMLBase()).replace('6 · 소재·영감','소재·영감').replace('8 · 책 문구 수집','책 문구'); }
+function ideaHTML(i){ return noEmoji(ideaHTMLBase(i)); }
+function projectHTML(p){ return noEmoji(projectHTMLBase(p).replace(/✅/g,'<span class="ck on"></span>').replace(/⬜/g,'<span class="ck"></span>')); }
+function problemHTML(id){ return noEmoji(problemHTMLBase(id)).replace('<div class="task">','<div class="task-q">'); }
 function noEmoji(h){ return h.replace(/(?:[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{23F0}-\u{23FF}✍✏⬜✅]️?)\s?/gu,''); }
 
 /* ---------- 배우기 (경로) ---------- */
@@ -1660,7 +1314,6 @@ function pathHTML(t){
   return `<div class="path-course"><span class="eyebrow">${esc(t.course)}</span><h3>${esc(t.name)}</h3></div>
   <div class="path">${t.lessons.map((l,i)=>{ const done=!!S.profile.lessonsDone[l.id]; return `<button class="node ${done?'done':''} ${i===firstUndone?'next':''}" data-lesson="${l.id}"><span class="dot"></span><span><span class="t">${esc(l.title)}</span><br><span class="m">${i+1}강 · 15분${done?' · 완료':i===firstUndone?' · 다음':''}</span></span></button>`; }).join('')}</div>`;
 }
-function trackHTML(t){ return pathHTML(t); }
 function learnHTML(){
   const seg=S.seg.learn==='major'||S.seg.learn==='exam'?S.seg.learn:'basic';
   const head=`<div class="seg"><button data-seg="basic" class="${seg==='basic'?'on':''}">기초</button><button data-seg="major" class="${seg==='major'?'on':''}">전공</button><button data-seg="exam" class="${seg==='exam'?'on':''}">서·논술</button></div>`;
@@ -1887,7 +1540,6 @@ function openFeedbackSheet(w,v){
   });
 }
 function personaRow(k){ const P=PERSONAS[k]; return `<button class="opt" data-p="${k}"><span class="mono">${esc(persMono(k))}</span><span style="flex:1"><b>${esc(P.name)}</b><span>${esc(P.desc)}</span></span>${svgI('chev')}</button>`; }
-function pickPersona(w,v){ openFeedbackSheet(w,v); }
 
 /* ---------- 나 ---------- */
 function weeklyChartHTML(){
@@ -1943,7 +1595,7 @@ function bindStyle(v){
   const i2=$('[data-inst2]',v); if(i2) i2.onclick=onInstallClick;
   const by=$('[data-byok]',v); if(by) by.onclick=()=>byokSheet();
   bindByokStatus(v);
-  bindStyle_v1(v);
+  bindStyleBase(v);
 }
 
 
@@ -1988,6 +1640,16 @@ function aiPanel(html, opts={}){
 }
 function aiErrorMsg(e){
   const c=e&&e.code;
+  // [수정] 예전에 두 번 덧씌우던 오류 문구(설치형 앱 키·재시도)를 한 함수로 합침. 순서 유지.
+  if(c==='busy') return 'AI 서버가 지금 많이 바빠요. 세 번 다시 시도하고 예비 모델로도 해 봤지만 안 됐어요. 1~2분 뒤 다시 눌러 주세요.';
+  if(c==='quota_day') return '오늘 쓸 수 있는 무료 한도를 다 썼어요. 내일 다시 쓰거나, 나 → AI 연결에서 Claude로 바꿔 주세요.';
+  if(c==='offline') return '인터넷이 끊겨 있어요. 와이파이나 데이터를 켠 뒤 다시 눌러 주세요.';
+  if(c==='network') return AI_HIDDEN_DURING?'답을 기다리는 동안 다른 앱으로 넘어가서 연결이 끊겼어요. 답이 올 때까지 이 화면을 켜 두세요.':'인터넷 연결이 불안정해서 끊겼어요. 다시 눌러 주세요.';
+  if(c==='no_ai'&&IS_PAGES) return '아직 AI가 연결되지 않았어요. 나 → AI 연결에서 Gemini(구글)나 Claude API 키를 넣으면 이 앱에서 바로 AI 도움을 받을 수 있어요.';
+  if(c==='bad_key') return 'API 키가 맞지 않아요. 나 → AI 연결에서 키를 다시 확인해 주세요.';
+  if(c==='bad_model') return '모델 이름을 찾지 못했어요. 나 → AI 연결 → 모델 칸을 비워 기본값으로 두세요.';
+  if(c==='no_credit') return 'API 크레딧(잔액)이 부족해요. 키를 만든 사이트에서 결제 상태를 확인해 주세요.';
+  if(c==='rate_limited'&&byokGet()) return '무료 한도나 분당 요청 수에 닿았어요. 1~2분 뒤 다시 시도해 주세요.';
   if(c==='no_ai') return IS_PAGES?'설치형 앱(GitHub)에서는 AI를 부를 수 없어요. AI 도움은 claude.ai 버전 뭉작가에서 받을 수 있어요.':'이 화면에서는 AI를 쓸 수 없어요. claude.ai 앱이나 웹에서 뭉작가를 열어 주세요.';
   if(c==='not_granted') return 'AI 사용이 허용되지 않았어요. 처음 쓸 때 뜨는 허용 창에서 "허용"을 눌러야 해요. 페이지를 새로 열면 다시 물어봐요.';
   if(c==='session_expired') return 'claude.ai 로그인이 풀렸어요. 다시 로그인한 뒤 시도해 주세요.';
@@ -2015,7 +1677,7 @@ function showAiError(e){
   const bz=$('#aiPanel [data-byok2]'); if(bz) bz.onclick=()=>{ aiPanel(null); byokSheet(); };
   const a=$('#aiPanel [data-carry]'); if(a) a.addEventListener('click',()=>{ copyText(carryCode(w)).then(ok=>toast(ok?'글을 복사했어요':'복사 실패: 나 → 백업 코드 복사를 써 주세요')); });
 }
-async function askAI(prompt, opts={}){
+async function askAIRun(prompt, opts={}){ // [수정] 실제 호출. 화면 켜 두기·재시도 안내는 아래 askAI가 감쌈
   const label=opts.label||S.aiLabel||'AI가 생각하는 중'; S.aiLabel=null;
   const ai=await getAI();
   if(!ai){ const e={code:'no_ai'}; showAiError(e); throw e; }
@@ -2056,44 +1718,6 @@ const BYOK_QUICK={gemini:'gemini-flash-latest', claude:'claude-haiku-5-5'};
 function byokGet(){ try{ return JSON.parse(localStorage.getItem(BYOK_KEY)||'null'); }catch(e){ return null; } }
 function byokSet(v){ try{ v?localStorage.setItem(BYOK_KEY,JSON.stringify(v)):localStorage.removeItem(BYOK_KEY); }catch(e){} S.aiPromise=null; }
 async function blobB64(b){ const buf=new Uint8Array(await b.arrayBuffer()); let s=''; for(let i=0;i<buf.length;i+=0x8000) s+=String.fromCharCode.apply(null,buf.subarray(i,i+0x8000)); return {data:btoa(s), type:b.type||'image/jpeg'}; }
-function byokAdapter(cfg){
-  const call=async(prompt,o={})=>{
-    const imgs=o.images?await Promise.all([].concat(o.images).map(blobB64)):[];
-    const tier=o.modelTier||'default';
-    const model=(cfg.model&&cfg.model.trim())||(tier==='quick'?BYOK_QUICK:BYOK_DEF)[cfg.provider];
-    const text=prompt+'\n\n(반드시 JSON만 출력하세요.)';
-    let res;
-    try{
-      if(cfg.provider==='gemini'){
-        res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{method:'POST',signal:o.signal,
-          headers:{'content-type':'application/json','x-goog-api-key':cfg.key},
-          body:JSON.stringify({contents:[{role:'user',parts:[...imgs.map(i=>({inline_data:{mime_type:i.type,data:i.data}})),{text}]}],generationConfig:{responseMimeType:'application/json',maxOutputTokens:16384}})});
-      } else {
-        res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',signal:o.signal,
-          headers:{'content-type':'application/json','x-api-key':cfg.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-          body:JSON.stringify({model,max_tokens:4096,messages:[{role:'user',content:[...imgs.map(i=>({type:'image',source:{type:'base64',media_type:i.type,data:i.data}})),{type:'text',text}]}]})});
-      }
-    }catch(e){ if(e&&e.name==='AbortError') throw {code:'cancelled'}; throw {code:'upstream_error',message:String(e)}; }
-    let j=null; try{ j=await res.json(); }catch(e){}
-    if(!res.ok){ const m=(j&&(j.error&&(j.error.message||j.error.type)))||res.status;
-      if(res.status===401||res.status===403||/API key|api_key|authentication|PERMISSION/i.test(String(m))) throw {code:'bad_key',message:String(m)};
-      if(res.status===404||/not found|model/i.test(String(m))&&res.status===400) throw {code:'bad_model',message:String(m)};
-      if(res.status===429) throw {code:'rate_limited',message:String(m)};
-      if(res.status===402||/credit|billing|balance/i.test(String(m))) throw {code:'no_credit',message:String(m)};
-      throw {code:'upstream_error',message:String(m)}; }
-    let out='';
-    if(cfg.provider==='gemini'){ const c=(j.candidates||[])[0]; out=((c&&c.content&&c.content.parts)||[]).filter(p=>!p.thought).map(p=>p.text||'').join(''); if(!out&&c&&c.finishReason==='SAFETY') throw {code:'refused'}; }
-    else out=(j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
-    if(!out.trim()) throw {code:'empty_completion'};
-    o.onText&&o.onText({text:out,delta:out});
-    return {text:out, truncated:false};
-  };
-  const fn=(p,o)=>call(p,o);
-  fn.json=async(p,o)=>{ const r=await call(p,o); try{ return parseJSON(r.text); }catch(e){ throw {code:'invalid_json',text:r.text}; } };
-  fn.limits=async()=>({maxPromptBytes:262144, images:{maxCount:5}});
-  fn.byok=cfg.provider;
-  return fn;
-}
 async function getAI(){
   if(!S.aiPromise) S.aiPromise=(async()=>{
     try{ if(window.claude&&claude.use){ const ai=await claude.use('sample'); if(ai){ if(ai.limits){ try{ const l=await ai.limits(); S.aiImages=!!(l&&l.images); }catch(e){} } return ai; } } }catch(e){}
@@ -2101,42 +1725,6 @@ async function getAI(){
     return null;
   })();
   return S.aiPromise;
-}
-const _aiErrorMsg0=aiErrorMsg;
-aiErrorMsg=function(e){
-  const c=e&&e.code;
-  if(c==='no_ai'&&IS_PAGES) return '아직 AI가 연결되지 않았어요. 나 → AI 연결에서 Gemini(구글)나 Claude API 키를 넣으면 이 앱에서 바로 AI 도움을 받을 수 있어요.';
-  if(c==='bad_key') return 'API 키가 맞지 않아요. 나 → AI 연결에서 키를 다시 확인해 주세요.';
-  if(c==='bad_model') return '모델 이름을 찾지 못했어요. 나 → AI 연결 → 모델 칸을 비워 기본값으로 두세요.';
-  if(c==='no_credit') return 'API 크레딧(잔액)이 부족해요. 키를 만든 사이트에서 결제 상태를 확인해 주세요.';
-  if(c==='rate_limited'&&byokGet()) return '무료 한도나 분당 요청 수에 닿았어요. 1~2분 뒤 다시 시도해 주세요.';
-  return _aiErrorMsg0(e);
-};
-function byokSheet(){
-  const cur=byokGet()||{provider:'gemini',key:'',model:''}; let prov=cur.provider;
-  const draw=(el,close)=>{
-    const g=prov==='gemini';
-    el.innerHTML=`<div class="grab"></div><h3>AI 연결</h3>
-    <p class="small muted">이 설치형 앱에서 AI 피드백·협동·막힘·사진 인식·문체 분석을 쓰려면 API 키를 한 번 넣어 주세요. 키는 <b>이 폰 안에만</b> 저장되고, 백업 코드에도 들어가지 않아요.</p>
-    <div class="seg" style="margin-top:10px"><button data-pv="gemini" class="${g?'on':''}">Gemini (구글)</button><button data-pv="claude" class="${g?'':'on'}">Claude</button></div>
-    <div class="note" style="margin-top:12px">${g?`<b>구글 키 만들기</b><br>1. <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> 열기 → 구글 계정 로그인<br>2. <b>Create API key</b> → 키 복사<br>3. 아래 칸에 붙여 넣기<br><span class="muted">무료 등급으로 시작할 수 있어요(하루·분당 사용 한도 있음). 무료 등급은 입력 내용이 구글 모델 개선에 쓰일 수 있어요.</span>`
-      :`<b>Claude 키 만들기</b><br>1. <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> 열기 → 가입·로그인<br>2. Billing에서 크레딧 충전(유료)<br>3. API Keys → <b>Create Key</b> → 키 복사 → 아래 칸에 붙여 넣기<br><span class="muted">피드백 한 번에 보통 몇십 원 정도예요.</span>`}</div>
-    <label class="field"><span>${g?'Gemini':'Claude'} API 키</span><input data-key type="password" autocomplete="off" spellcheck="false" placeholder="${g?'AIza...':'sk-ant-...'}" value="${cur.provider===prov?esc(cur.key||''):''}"></label>
-    <label class="field"><span>모델 (비워 두면 기본값: ${esc(BYOK_DEF[prov])})</span><input data-model autocomplete="off" spellcheck="false" placeholder="${esc(BYOK_DEF[prov])}" value="${cur.provider===prov?esc(cur.model||''):''}"></label>
-    <div data-msg class="small" style="min-height:20px;margin:4px 0"></div>
-    <div style="display:flex;gap:8px"><button class="btn block" data-test>연결 테스트</button><button class="btn primary block" data-save>저장</button></div>
-    ${byokGet()?'<button class="btn ghost block" data-del style="margin-top:6px">키 지우기</button>':''}`;
-    el.querySelectorAll('[data-pv]').forEach(b=>b.onclick=()=>{ prov=b.dataset.pv; draw(el,close); });
-    const val=()=>({provider:prov, key:$('[data-key]',el).value.trim(), model:$('[data-model]',el).value.trim()});
-    const msg=$('[data-msg]',el);
-    $('[data-test]',el).onclick=async()=>{ const v=val(); if(!v.key) return msg.textContent='키를 넣어 주세요';
-      msg.style.color='var(--muted)'; msg.textContent='확인하는 중…';
-      try{ const r=await byokAdapter(v).json('연결 테스트입니다. {"ok":true} 를 그대로 출력하세요.',{modelTier:'quick'}); msg.style.color='var(--good)'; msg.textContent=r&&r.ok?'연결됐어요! 저장을 눌러 주세요.':'응답은 왔어요. 저장해도 돼요.'; }
-      catch(e){ msg.style.color='var(--fix)'; msg.textContent=aiErrorMsg(e)+(e&&e.message?` (${String(e.message).slice(0,80)})`:''); } };
-    $('[data-save]',el).onclick=()=>{ const v=val(); if(!v.key) return msg.textContent='키를 넣어 주세요'; byokSet(v); close(); toast(`${v.provider==='gemini'?'Gemini':'Claude'} 연결을 저장했어요`); render(); };
-    const d=$('[data-del]',el); if(d) d.onclick=()=>{ byokSet(null); close(); toast('키를 지웠어요'); render(); };
-  };
-  sheet('', draw);
 }
 
 
@@ -2274,23 +1862,15 @@ function byokAdapter(cfg){
   fn.byok=cfg.provider;
   return fn;
 }
-const _aiErrorMsg1=aiErrorMsg;
-aiErrorMsg=function(e){
-  const c=e&&e.code;
-  if(c==='busy') return 'AI 서버가 지금 많이 바빠요. 세 번 다시 시도하고 예비 모델로도 해 봤지만 안 됐어요. 1~2분 뒤 다시 눌러 주세요.';
-  if(c==='quota_day') return '오늘 쓸 수 있는 무료 한도를 다 썼어요. 내일 다시 쓰거나, 나 → AI 연결에서 Claude로 바꿔 주세요.';
-  if(c==='offline') return '인터넷이 끊겨 있어요. 와이파이나 데이터를 켠 뒤 다시 눌러 주세요.';
-  if(c==='network') return AI_HIDDEN_DURING?'답을 기다리는 동안 다른 앱으로 넘어가서 연결이 끊겼어요. 답이 올 때까지 이 화면을 켜 두세요.':'인터넷 연결이 불안정해서 끊겼어요. 다시 눌러 주세요.';
-  return _aiErrorMsg1(e);
-};
-const _askAI1=askAI;
-askAI=async function(prompt,opts={}){
+
+// [수정] 덧씌우던 askAI를 정식 함수로 바꿈
+async function askAI(prompt,opts={}){
   let wl=null; try{ if(navigator.wakeLock) wl=await navigator.wakeLock.request('screen'); }catch(_){}
   AI_HIDDEN_DURING=false; S.aiRetry=0;
   const rt=setInterval(()=>{ const p=$('#aiPanel .in > div.small.muted'); if(p&&S.aiRetry) p.textContent=`서버가 바빠서 다시 연결하는 중이에요 (${S.aiRetry}/3)${S.aiRetry>=2?' · 예비 모델로 시도':''}`; else if(p&&!S.aiRetry&&IS_PAGES) p.textContent='답이 올 때까지 이 화면을 켜 두세요. 보통 10~40초 걸려요.'; },500);
-  try{ return await _askAI1(prompt,opts); }
+  try{ return await askAIRun(prompt,opts); }
   finally{ clearInterval(rt); try{ wl&&wl.release(); }catch(_){} }
-};
+}
 
 /* ============ 시작 ============ */
 (async function start(){
