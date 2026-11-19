@@ -1234,6 +1234,16 @@ function todayRoutine(){
   return {dow, g, mins, kind:'write', name:ROUTINE_DAY[dow], task:ROUTINE_TASK[g][dow]};
 }
 
+/* 이미 시작 설정을 마친 사람: 작가 이름만 한 번 물어봄 */
+function penNameSheet(){
+  sheet(`<h3>작가 이름을 정해 주세요</h3><p class="small muted">홈 화면에 <b data-penprev>뭉작가</b>로 저장돼요. 나중에 '나의 기록 → 바꾸기'에서 바꿀 수 있어요.</p>
+    <label class="field"><span>작가 이름 (4글자까지)</span><input data-pen maxlength="4" placeholder="뭉" autocomplete="off"></label>
+    <button class="btn primary block" data-ok style="margin-top:10px">정했어요</button>`, (el,close)=>{
+    const pi=$('[data-pen]',el), pv=$('[data-penprev]',el);
+    pi.oninput=()=>{ pv.textContent=(cleanPen(pi.value)||'뭉')+'작가'; };
+    $('[data-ok]',el).onclick=()=>{ S.profile.penName=cleanPen(pi.value)||'뭉'; Store.saveProfile(); applyAppName(); close(); render(); toast(`이제 ${appName()}예요`); };
+  });
+}
 /* ---- 첫 실행 안내 ---- */
 function showOnboarding(force){
   const ob=S.profile.onboard||{goal:'debut', genres:[...LIT], minutes:15};
@@ -2289,6 +2299,7 @@ askAI=async function(prompt,opts={}){
   applyAppName(); if(navigator.serviceWorker) navigator.serviceWorker.addEventListener('controllerchange',applyAppName);
   S.tab=null; route(); getAI();
   if(!S.profile.onboard) setTimeout(()=>showOnboarding(),300);
+  else if(!S.profile.penName) setTimeout(()=>penNameSheet(),300);
   document.addEventListener('visibilitychange',()=>{ if(document.hidden&&S.editorCommit&&S.tab==='write'&&S.sub) S.editorCommit(); });
 })();
 

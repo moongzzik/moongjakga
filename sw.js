@@ -1,5 +1,5 @@
 // 뭉작가 서비스워커 — 고칠 때마다 VERSION을 1씩 올리세요
-const VERSION = 'moongjakga-v10';
+const VERSION = 'moongjakga-v11';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
