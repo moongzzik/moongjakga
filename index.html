@@ -1,0 +1,1900 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>뭉작가</title>
+<meta name="theme-color" content="#f3ede1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1d1b18" media="(prefers-color-scheme: dark)">
+<meta name="description" content="AI가 대신 쓰지 않는, 나만의 문체를 짓는 글쓰기 창작 앱">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="뭉작가">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>:root{
+  --bg:#fbfaf7; --surface:#ffffff; --sunk:#f3f1ec; --ink:#1d1c1a; --ink2:#4a4741; --muted:#8e887e; --line:#ebe7df; --line2:#dcd7cc;
+  --accent:#1f3a68; --accent-ink:#ffffff; --accent-soft:#e9eef7;
+  --good:#3d7a57; --good-soft:rgba(61,122,87,.16); --fix:#b0573c; --fix-soft:rgba(176,87,60,.16); --ask:#1f3a68; --ask-soft:rgba(31,58,104,.13);
+  --serif:'Noto Serif KR','Nanum Myeongjo',serif; --sans:'Noto Sans KR',-apple-system,'Apple SD Gothic Neo',sans-serif;
+  --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+  /* 예전 변수 호환 */
+  --paper:var(--bg); --card:var(--surface); --red:var(--accent); --red-soft:var(--accent-soft); --green:var(--good); --green-soft:var(--good-soft); --blue:var(--accent); --blue-soft:var(--accent-soft); --gold:var(--muted); --gold-soft:var(--sunk);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#121212; --surface:#1b1b1b; --sunk:#222; --ink:#ebe8e1; --ink2:#c3bfb6; --muted:#8a857c; --line:#2a2a2a; --line2:#3a3a3a;
+  --accent:#9db7e6; --accent-ink:#0f1a2e; --accent-soft:rgba(157,183,230,.12);
+  --good:#7fbf98; --good-soft:rgba(127,191,152,.18); --fix:#e0937a; --fix-soft:rgba(224,147,122,.2); --ask:#9db7e6; --ask-soft:rgba(157,183,230,.18);
+  color-scheme:dark;
+}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;padding:0}
+input,textarea,select{font:inherit;color:inherit}
+a{color:var(--accent)}
+.app{max-width:640px;margin:0 auto;min-height:100vh;padding:calc(var(--safe-t) + 4px) 22px calc(var(--safe-b) + 96px)}
+header.top{display:flex;align-items:baseline;justify-content:space-between;padding:14px 0 6px}
+.brand{font-family:var(--serif);font-size:19px;font-weight:700;letter-spacing:-.3px;color:var(--ink)}
+.brand span{color:var(--ink)}
+.store-chip{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.store-chip::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--good)}
+.store-chip.warn::before{background:var(--fix)}
+h1,h2,h3{font-family:var(--serif);letter-spacing:-.4px;margin:0;font-weight:700}
+h2{font-size:13px;font-family:var(--sans);font-weight:500;letter-spacing:.4px;color:var(--muted);margin:30px 0 6px}
+h3{font-size:17px}
+.muted{color:var(--muted)} .small{font-size:13px}
+.serif{font-family:var(--serif)}
+.eyebrow{font-size:12px;letter-spacing:.6px;color:var(--muted)}
+.eyebrow b{color:var(--accent);font-weight:500}
+/* 버튼 */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:10px;border:1px solid var(--line2);background:var(--surface);font-size:14px;font-weight:500;white-space:nowrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.dark{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.light{background:transparent}
+.btn.block{width:100%;height:46px}
+.btn.sm{height:32px;padding:0 12px;font-size:13px;border-radius:8px}
+.btn:disabled{opacity:.4;cursor:default}
+.link{color:var(--accent);font-weight:500;font-size:14.5px;display:inline-flex;align-items:center;gap:4px}
+.link.mute{color:var(--muted);font-weight:400}
+/* 공통 블록 */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin:10px 0}
+.card.tight{padding:12px 14px}
+.note{font-size:13px;color:var(--ink2);background:var(--sunk);border-radius:10px;padding:11px 13px;margin:10px 0;line-height:1.6}
+.note a{font-weight:500}
+.rows{border-top:1px solid var(--line)}
+.row-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:15px 0;border-bottom:1px solid var(--line);background:none}
+.row-item .grow{flex:1;min-width:0}
+.row-item .t{font-family:var(--serif);font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row-item .m{font-size:12.5px;color:var(--muted);margin-top:1px}
+.row-item .chev{color:var(--line2)}
+.list-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px 0;border-bottom:1px solid var(--line);background:none;border-radius:0}
+.list-item .grow{flex:1;min-width:0}
+.list-item .title{font-family:var(--serif);font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list-item .sub{font-size:12.5px;color:var(--muted)}
+.tag{display:inline-block;font-size:11.5px;color:var(--muted);font-weight:400;white-space:nowrap}
+.tag::after{content:' ·'}
+.tag.plain::after{content:''}
+.empty{text-align:center;padding:36px 12px;color:var(--muted);font-size:14px}
+.empty .big{font-family:var(--serif);font-size:17px;color:var(--ink2);margin-bottom:4px}
+.seg{display:flex;gap:22px;border-bottom:1px solid var(--line);margin:6px 0 4px}
+.seg button{padding:10px 0;font-size:14.5px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.seg button.on{color:var(--ink);font-weight:700;border-color:var(--ink)}
+.chip{border:1px solid var(--line2);background:var(--surface);border-radius:99px;padding:6px 13px;font-size:13.5px;white-space:nowrap}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.field{display:block;margin:12px 0}
+.field > span{font-size:12.5px;color:var(--muted);display:block;margin-bottom:5px}
+.field input,.field textarea{width:100%;border:1px solid var(--line2);border-radius:10px;padding:11px 12px;background:var(--surface);outline:none}
+.field textarea{font-family:var(--serif);font-size:16px;min-height:90px;resize:vertical}
+.field input:focus,.field textarea:focus{border-color:var(--accent)}
+.prog,.bar{height:3px;background:var(--line);border-radius:9px;overflow:hidden;margin-top:8px}
+.prog i,.bar i{display:block;height:100%;background:var(--accent)}
+.back{color:var(--muted);font-size:14px;padding:8px 0;display:inline-flex;align-items:center;gap:2px}
+.loading{display:flex;align-items:center;gap:12px;padding:16px 0;color:var(--muted);font-size:14px}
+.spin{width:16px;height:16px;border:2px solid var(--line2);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite;flex:0 0 16px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.toast{position:fixed;left:50%;bottom:calc(var(--safe-b) + 90px);transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:13.5px;z-index:80;max-width:88vw;animation:fade .2s;text-align:center}
+/* 시트 */
+.scrim{position:fixed;inset:0;background:rgba(10,10,10,.38);z-index:60;display:flex;align-items:flex-end;justify-content:center;animation:fade .15s}
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:88vh;overflow:auto;border-radius:20px 20px 0 0;padding:14px 22px calc(var(--safe-b) + 22px);animation:up .22s cubic-bezier(.2,.8,.2,1)}
+.sheet .grab{width:36px;height:4px;border-radius:9px;background:var(--line2);margin:0 auto 16px}
+.sheet h3{font-size:19px;margin-bottom:4px}
+@keyframes up{from{transform:translateY(40px);opacity:.3}to{transform:none;opacity:1}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.opt{display:flex;gap:14px;align-items:center;width:100%;text-align:left;padding:14px 0;border-bottom:1px solid var(--line);background:none}
+.opt .ic{display:none}
+.opt .mono{width:36px;height:36px;border-radius:50%;border:1px solid var(--line2);display:grid;place-items:center;font-family:var(--serif);font-size:14px;flex:0 0 36px;color:var(--ink2)}
+.opt b{display:block;font-weight:500}
+.opt span{font-size:13px;color:var(--muted)}
+/* 하단 탭 */
+nav.bottom{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px 0 calc(var(--safe-b) + 6px);z-index:20}
+nav.bottom .in{max-width:640px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+nav.bottom a{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--muted);text-decoration:none;padding:4px 0}
+nav.bottom a svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+nav.bottom a.on{color:var(--ink)}
+body.editing nav.bottom,body.editing header.top{display:none}
+.fab{position:fixed;right:max(22px,calc(50% - 298px));bottom:calc(var(--safe-b) + 80px);width:54px;height:54px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:15}
+.fab svg{width:24px;height:24px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round}
+.weave-bar{position:fixed;left:0;right:0;bottom:calc(var(--safe-b) + 80px);display:flex;justify-content:center;pointer-events:none;z-index:16}
+.weave-bar[hidden]{display:none}
+.weave-bar .btn{pointer-events:auto;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+/* 오늘 */
+.today{padding:26px 0 8px}
+.today .date{font-size:13px;color:var(--muted)}
+.today .task{font-family:var(--serif);font-size:23px;line-height:1.55;letter-spacing:-.4px;margin:14px 0 20px;font-weight:500}
+.today .acts{display:flex;gap:18px;align-items:center}
+.week{display:flex;align-items:center;gap:14px;margin:26px 0 0;padding:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.week .dots{display:flex;gap:9px}
+.week .d{width:24px;text-align:center;font-size:11px;color:var(--muted)}
+.week .d i{display:block;width:7px;height:7px;border-radius:50%;margin:0 auto 4px;background:var(--line2)}
+.week .d.on i{background:var(--accent)}
+.week .d.now{color:var(--ink);font-weight:700}
+.week .d.now i{box-shadow:0 0 0 2px var(--bg),0 0 0 3px var(--ink)}
+.week .sum{margin-left:auto;font-size:12.5px;color:var(--muted)}
+/* 배우기 경로 */
+.path{position:relative;margin:8px 0 4px;padding-left:4px}
+.path-course{margin:26px 0 6px}
+.path-course .eyebrow{display:block}
+.path-course h3{font-size:18px;margin-top:2px}
+.path-course .desc{font-size:13px;color:var(--muted)}
+.node{display:flex;gap:16px;align-items:center;width:100%;text-align:left;padding:11px 0;position:relative}
+.node .dot{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line2);background:var(--bg);flex:0 0 22px;position:relative;z-index:1;display:grid;place-items:center}
+.node.done .dot{background:var(--accent);border-color:var(--accent)}
+.node.done .dot::after{content:'';width:8px;height:4px;border-left:1.6px solid var(--accent-ink);border-bottom:1.6px solid var(--accent-ink);transform:rotate(-45deg) translate(1px,-1px)}
+.node.next .dot{border:2px solid var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.node:not(:last-child)::before{content:'';position:absolute;left:10.5px;top:33px;bottom:-11px;width:1px;background:var(--line2)}
+.node .t{font-family:var(--serif);font-size:15.5px}
+.node.next .t{font-weight:700}
+.node .m{font-size:12px;color:var(--muted)}
+/* 레슨 */
+.lesson h1{font-size:27px;line-height:1.35;margin:10px 0 18px}
+.lesson .lead{font-family:var(--serif);font-size:16.5px;line-height:1.85;color:var(--ink)}
+.lesson ol.pts{list-style:none;padding:0;margin:18px 0;counter-reset:p;border-top:1px solid var(--line)}
+.lesson ol.pts li{counter-increment:p;padding:12px 0 12px 32px;border-bottom:1px solid var(--line);position:relative;font-size:14.5px}
+.lesson ol.pts li::before{content:counter(p);position:absolute;left:0;top:12px;font-family:var(--serif);color:var(--accent);font-weight:700}
+.ex{display:grid;gap:14px;margin:20px 0}
+.ex .b,.ex .a{font-family:var(--serif);white-space:pre-line;font-size:16px;padding-left:14px;border-left:2px solid var(--line2);color:var(--muted)}
+.ex .a{border-color:var(--accent);color:var(--ink)}
+.ex small{display:block;font-family:var(--sans);font-size:11.5px;letter-spacing:.4px;margin-bottom:2px;color:var(--muted)}
+.task-q{font-family:var(--serif);font-size:17px;line-height:1.75;padding:18px 0;border-top:1px solid var(--ink);border-bottom:1px solid var(--line);margin:8px 0 14px;white-space:pre-line}
+/* 에디터 */
+.ed-bar{position:sticky;top:0;z-index:12;display:flex;align-items:center;gap:6px;height:52px;margin:0 -22px;padding:calc(var(--safe-t)) 14px 0;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.ed-bar .ib{width:38px;height:38px;display:grid;place-items:center;border-radius:10px;color:var(--ink2)}
+.ed-bar .ib svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ed-bar .mid{flex:1;text-align:center;font-size:13px;color:var(--muted)}
+.ed-bar .timer{font-variant-numeric:tabular-nums;font-size:13px;color:var(--accent);font-weight:500;padding:6px 8px;border-radius:8px}
+.ed-ref{display:flex;align-items:center;gap:8px;width:100%;text-align:left;font-size:13px;color:var(--muted);padding:10px 0;border-bottom:1px solid var(--line)}
+.ed-ref b{color:var(--accent);font-weight:500;flex:0 0 auto}
+.ed-ref span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ed-title{width:100%;border:0;background:transparent;font-family:var(--serif);font-size:25px;font-weight:700;letter-spacing:-.4px;padding:22px 0 8px;outline:none}
+.ed-title::placeholder,.ed-body::placeholder{color:var(--line2)}
+.ed-wrap{position:relative}
+.ed-body,.ed-back{font-family:var(--serif);font-size:17.5px;line-height:1.95;letter-spacing:-.1px;padding:6px 0 40vh;margin:0;border:0;width:100%;white-space:pre-wrap;overflow-wrap:break-word;word-break:keep-all}
+.ed-body{display:block;position:relative;z-index:1;background:transparent;resize:none;outline:none;overflow:hidden;min-height:50vh;caret-color:var(--accent)}
+.ed-back{position:absolute;inset:0;color:transparent;pointer-events:none;overflow:hidden}
+.ed-back mark{color:transparent;border-radius:2px;background:none}
+.ed-back mark.good{background:linear-gradient(transparent 72%,var(--good-soft) 72%);box-shadow:inset 0 -2px 0 var(--good)}
+.ed-back mark.fix{background:linear-gradient(transparent 72%,var(--fix-soft) 72%);box-shadow:inset 0 -2px 0 var(--fix)}
+.ed-back mark.ask{box-shadow:inset 0 -2px 0 var(--ask);background:linear-gradient(transparent 72%,var(--ask-soft) 72%)}
+.ed-back mark.abs{background:linear-gradient(transparent 80%,var(--fix-soft) 80%)}
+.ed-back mark.on{background:var(--accent-soft)}
+.ed-tools{position:fixed;left:0;right:0;bottom:0;z-index:25;background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px 10px calc(var(--safe-b) + 6px)}
+.ed-tools .in{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:2px}
+.ed-tools .cnt{font-size:12px;color:var(--muted);padding:0 8px;min-width:64px;font-variant-numeric:tabular-nums}
+.ed-tools .sv{font-size:11px;color:var(--muted);display:block}
+.ed-tools button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--ink2);padding:4px 0;border-radius:10px}
+.ed-tools button svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.ed-tools button.acc{color:var(--accent);font-weight:700}
+.ed-tools button .badge{min-width:16px;height:16px;border-radius:9px;background:var(--accent);color:var(--accent-ink);font-size:10px;line-height:16px;padding:0 4px;position:absolute;margin:-4px 0 0 18px}
+.ed-comment{position:fixed;left:0;right:0;bottom:calc(var(--safe-b) + 64px);z-index:24;padding:0 14px;animation:up .18s ease-out}
+.ed-comment .in{max-width:612px;margin:0 auto;background:var(--surface);border:1px solid var(--line2);border-radius:14px;padding:13px 15px;box-shadow:0 10px 30px rgba(0,0,0,.12)}
+.ed-comment .k{font-size:11.5px;letter-spacing:.4px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.ed-comment .k.good{color:var(--good)} .ed-comment .k.fix{color:var(--fix)} .ed-comment .k.ask{color:var(--ask)} .ed-comment .k.abs{color:var(--fix)}
+.ed-comment p{margin:6px 0 0;font-size:14px;line-height:1.6}
+.ed-comment .dir{color:var(--ink2);font-size:13.5px;margin-top:6px;padding-left:10px;border-left:2px solid var(--line2)}
+.ed-status{font-size:13px;color:var(--muted)}
+/* 피드백·협동 패널 */
+.fb{border-top:1px solid var(--line);padding:4px 0}
+.fb-head{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;padding:12px 0;background:none}
+.fb-head b{font-weight:500}
+.fb-body{padding:0 0 14px}
+.fb-sec{margin-top:14px}
+.fb-sec > b{font-size:11.5px;letter-spacing:.5px;display:block;margin-bottom:6px;font-weight:700}
+.fb-sec.good > b{color:var(--good)} .fb-sec.q > b{color:var(--accent)} .fb-sec.fix > b{color:var(--fix)}
+.quote{font-family:var(--serif);padding:0 0 0 10px;border-left:2px solid var(--line2);margin:6px 0 4px;color:var(--ink2);cursor:pointer}
+.fb-item{margin:8px 0 12px;font-size:14px}
+.mission{border-top:1px solid var(--ink);padding:12px 0 2px;margin-top:16px;font-family:var(--serif);font-size:15.5px}
+.mission b{display:block;font-family:var(--sans);font-size:11.5px;letter-spacing:.5px;color:var(--accent);margin-bottom:4px}
+table.rub{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:4px}
+table.rub td{border-top:1px solid var(--line);padding:8px 2px;vertical-align:top}
+table.rub td.s{white-space:nowrap;font-weight:700;color:var(--accent);text-align:right;font-variant-numeric:tabular-nums}
+.turn{display:flex;gap:12px;margin:14px 0;align-items:flex-start}
+.turn .av{width:26px;height:26px;border-radius:50%;border:1px solid var(--line2);display:grid;place-items:center;font-size:11px;flex:0 0 26px;color:var(--muted);font-family:var(--serif)}
+.turn .bub{flex:1;font-size:14.5px}
+.turn .kind{font-size:11.5px;font-weight:700;color:var(--accent);letter-spacing:.4px}
+.turn.me .kind{color:var(--muted)}
+.turn.me .bub{color:var(--muted)}
+.tools{border-top:1px solid var(--line);padding:12px 0;margin:6px 0}
+.tools > b{font-size:11.5px;color:var(--muted);letter-spacing:.5px;display:block;margin-bottom:4px;font-weight:500}
+.tools .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tools input,.tools textarea{width:100%;border:1px solid var(--line2);border-radius:8px;padding:8px 10px;background:var(--surface);font-size:14px;outline:none}
+.tools textarea{min-height:56px;resize:vertical}
+.tools label{display:block;margin:8px 0}
+.tools label span{font-size:12px;color:var(--muted);display:block;margin-bottom:2px}
+.hl{color:var(--fix);font-size:13px;margin-right:8px}
+.ref{padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
+.ref > b{font-size:11.5px;letter-spacing:.5px;color:var(--accent);font-weight:700;display:block;margin-bottom:4px}
+.ref .q{font-family:var(--serif);font-size:15px;white-space:pre-wrap}
+.passage{font-family:var(--serif);white-space:pre-wrap;font-size:15.5px;line-height:1.85;padding:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:10px 0;color:var(--ink2)}
+.version{border-top:1px solid var(--line);padding:12px 0}
+.version pre{white-space:pre-wrap;font-family:var(--serif);font-size:14.5px;margin:6px 0 0;max-height:200px;overflow:auto;color:var(--ink2)}
+/* 수집 */
+.qcard{padding:18px 0;border-bottom:1px solid var(--line);position:relative}
+.qcard.sel .text{color:var(--accent)}
+.qcard .text{font-family:var(--serif);font-size:16.5px;line-height:1.8;white-space:pre-wrap;padding-left:14px;border-left:2px solid var(--line2)}
+.qcard.sel .text{border-color:var(--accent)}
+.qcard .src{font-size:12.5px;color:var(--muted);margin:6px 0 0 16px}
+.qcard .memo{font-size:13.5px;color:var(--ink2);margin:8px 0 0 16px}
+.qcard .acts{display:flex;gap:16px;margin:12px 0 0 16px;flex-wrap:wrap}
+.qcard .acts .btn{height:auto;padding:0;border:0;background:none;font-size:13px;color:var(--accent);font-weight:500}
+.qcard .acts .btn.ghost{color:var(--muted)}
+.check{position:absolute;top:18px;right:0;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line2);color:transparent;font-size:12px;display:grid;place-items:center}
+.qcard.sel .check{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.idea{padding:16px 0;border-bottom:1px solid var(--line)}
+.idea h3{margin:2px 0 6px;font-size:17px}
+.idea .qq{font-family:var(--serif);color:var(--accent);margin-top:6px;font-size:14.5px}
+.ans{width:100%;border:0;border-bottom:1px solid var(--line2);padding:8px 0;background:transparent;font-size:15px;margin-top:4px;min-height:40px;resize:vertical;font-family:var(--serif);outline:none}
+.ans:focus{border-color:var(--accent)}
+.kw{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.kw span{font-family:var(--serif);border:1px solid var(--line2);border-radius:99px;padding:3px 12px;font-size:14px;background:none!important;color:var(--ink)!important}
+.portrait{font-family:var(--serif);font-size:16.5px;line-height:1.85}
+.gbar{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:13px}
+.gbar .lab{width:84px;color:var(--ink2)}
+.gbar .track2{flex:1;height:3px;background:var(--line);border-radius:9px;overflow:hidden}
+.gbar .track2 i{display:block;height:100%;background:var(--ink2)}
+/* 나 */
+.nums{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:8px 0}
+.nums div{padding:14px 0;text-align:center}
+.nums div+div{border-left:1px solid var(--line)}
+.nums b{display:block;font-family:var(--serif);font-size:22px;font-weight:700}
+.nums span{font-size:11.5px;color:var(--muted)}
+.badges{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 6px;margin:12px 0}
+.badges .bd{text-align:center;font-size:11px;color:var(--muted)}
+.badges .bd i{display:grid;place-items:center;width:46px;height:46px;margin:0 auto 5px;border-radius:50%;border:1px dashed var(--line2);font-style:normal;font-family:var(--serif);font-size:13px;color:var(--line2)}
+.badges .bd.on{color:var(--ink)}
+.badges .bd.on i{border:1.5px solid var(--accent);color:var(--accent);font-weight:700;background:var(--accent-soft)}
+.chart{display:flex;align-items:flex-end;gap:8px;height:96px;margin-top:12px}
+.chart div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:10px;color:var(--muted)}
+.chart div i{display:block;width:100%;max-width:26px;border-radius:3px 3px 0 0;background:var(--line2);margin-top:3px}
+.chart div.now i{background:var(--accent)}
+.set-row{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;padding:15px 0;border-bottom:1px solid var(--line);font-size:15px}
+.set-row span{color:var(--muted);font-size:13px}
+table.bm{width:100%;border-collapse:collapse;font-size:13px}
+table.bm th,table.bm td{border-top:1px solid var(--line);padding:10px 6px 10px 0;text-align:left;vertical-align:top}
+table.bm th{font-size:11.5px;color:var(--muted);font-weight:500}
+.ov{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.ov .no{font-family:var(--serif);color:var(--accent);font-weight:700;width:26px;flex:0 0 26px}
+.ov .q{font-family:var(--serif);font-size:14.5px;color:var(--ink2)}
+.ov .a{font-size:13px;color:var(--muted);margin-top:2px}
+.ck{display:inline-block;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--line2);vertical-align:middle}
+.ck.on{background:var(--accent);border-color:var(--accent)}
+input[type=checkbox]{accent-color:var(--accent)}
+.timer{font-variant-numeric:tabular-nums;color:var(--accent)}
+#view svg,.sheet svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+.row-item .chev svg,.opt > svg,.ed-ref > svg{color:var(--line2)}
+#view .ed-bar .ib svg{width:22px;height:22px}
+.back svg{width:18px;height:18px}
+.fab[hidden],.ed-tools[hidden],.ed-comment[hidden]{display:none}
+.fab svg{width:24px!important;height:24px!important}
+body.editing .toast{bottom:auto;top:calc(var(--safe-t) + 60px)}
+#view [data-area]{padding-bottom:90px}
+/* [수정] 따뜻한 종이 재질 */
+:root{
+  --bg:#f3ede1; --surface:#f9f5ec; --sunk:#ebe4d6; --ink:#2a2620; --ink2:#504a40; --muted:#8c8373; --line:#e2d9c8; --line2:#d3c8b4;
+  --accent:#24406f; --accent-soft:rgba(36,64,111,.09);
+  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .36 0 0 0 0 .24 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --fiber:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012 .04' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 .55 0 0 0 0 .45 0 0 0 0 .3 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1d1b18; --surface:#25221e; --sunk:#2b2824; --ink:#e8e1d4; --ink2:#c2b9a9; --muted:#8d8476; --line:#34302a; --line2:#463f36;
+  --accent:#a7bde4; --accent-soft:rgba(167,189,228,.1);
+  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .9 0 0 0 0 .85 0 0 0 0 .75 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --fiber:none;
+}}
+html,body{background-color:var(--bg);background-image:var(--grain),var(--fiber);background-attachment:fixed}
+.sheet{background-color:var(--bg);background-image:var(--grain)}
+.card,.field input,.field textarea,.btn,.chip,.tools input,.tools textarea,.ed-comment .in{background-color:var(--surface)}
+.btn.primary{background:var(--accent)} .chip.on{background:var(--ink)} .btn.ghost{background:transparent}
+.ed-back mark.on{background:var(--accent-soft)}
+
+
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top"><div class="brand">뭉<span>작가</span></div><div class="store-chip" id="storeChip">불러오는 중…</div></header>
+  <main id="view"><div class="loading"><div class="spin"></div>작업실을 여는 중…</div></main>
+</div>
+<div class="weave-bar" id="weaveBar" hidden></div>
+<button class="fab" id="fab" hidden aria-label="새 글"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+<div class="ed-comment" id="edComment" hidden></div>
+<nav class="ed-tools" id="edTools" hidden></nav>
+<nav class="bottom"><div class="in"><a href="#home" data-tab="home"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>오늘</a><a href="#write" data-tab="write"><svg viewBox="0 0 24 24"><path d="M16.5 3.5l4 4L8 20H4v-4z"/><path d="M14 6l4 4"/></svg>쓰기</a><a href="#learn" data-tab="learn"><svg viewBox="0 0 24 24"><path d="M3 5.5C6 4 9 4 12 6c3-2 6-2 9-.5V19c-3-1.5-6-1.5-9 .5-3-2-6-2-9-.5z"/><path d="M12 6v13.5"/></svg>배우기</a><a href="#me" data-tab="me"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>나</a></div></nav>
+<script>
+"use strict";
+// [추가] 뭉작가 — 실행 환경
+const APP_NAME='뭉작가';
+const ARTIFACT_URL='https://claude.ai/artifact/U2Vi8L439oUit3H3it9oiv';
+const IS_PAGES=/github\.io$/.test(location.hostname)||location.protocol==='file:'||location.hostname==='localhost'||location.hostname==='127.0.0.1';
+/* ============ 공통 ============ */
+const GENRES = { poem:{name:'시'}, novel:{name:'소설'}, essay:{name:'수필'}, script:{name:'시나리오·희곡'}, argument:{name:'논술'}, free:{name:'자유'} };
+
+/* ---- 7. 전문 작가 · 현직 작가 피드백 ---- */
+const PERSONAS = {
+  poet:{icon:'🌙', name:'현직 시인', desc:'이미지·리듬·언어의 밀도', role:'시집을 여러 권 펴내고 지금도 활발히 활동하는 현직 시인', focus:'언어의 밀도, 이미지의 선명함, 행갈이와 리듬, 상투적 표현, 여백을 봅니다.'},
+  novelist:{icon:'🖋️', name:'현직 소설가', desc:'인물·장면·긴장', role:'장편과 단편을 꾸준히 발표해 온 현직 소설가', focus:'인물의 욕망과 갈등, 장면 구성, 보여주기와 말하기, 대화, 시점의 일관성을 봅니다.'},
+  essayist:{icon:'🍃', name:'현직 수필가', desc:'경험·디테일·여운', role:'산문집을 여러 권 낸 현직 수필가', focus:'경험에서 의미를 길어 올리는 힘, 구체적 디테일, 정직함, 구성과 여운을 봅니다.'},
+  dramatist:{icon:'🎬', name:'현직 극작가·시나리오 작가', desc:'행동·갈등·대사', role:'무대와 영화 현장에서 활동하는 현직 극작가이자 시나리오 작가', focus:'보이는 행동으로 쓰였는지, 장면의 목표와 갈등, 대사의 서브텍스트, 형식을 봅니다.'},
+  editor:{icon:'📚', name:'문학 편집자', desc:'독자와 원고 완성도', role:'문학 출판사에서 신인 작가의 원고를 책으로 만들어 온 현직 편집자', focus:'독자가 끝까지 읽게 되는가, 구조와 흐름, 군더더기, 첫 문단과 마지막 문단의 힘을 봅니다.'},
+  professor:{icon:'🎓', name:'문예창작과 교수', desc:'합평 수업처럼 균형 있게', role:'대학 문예창작학과에서 오래 합평 수업을 이끌어 온 교수이자 등단 작가', focus:'합평 수업의 방식대로 의도, 구성, 문장, 독자 경험을 고르게 살핍니다.'},
+  reader:{icon:'👀', name:'첫 독자', desc:'어디서 빠져들고 어디서 멈췄나', role:'책을 좋아하는 평범하지만 예민한 독자', focus:'비평 용어 없이, 읽으면서 어디서 몰입했고 어디서 멈칫했는지, 무엇이 궁금했는지를 솔직하게 말합니다.'},
+  judge:{icon:'🏆', name:'공모전 심사위원', desc:'투고작을 심사 기준으로', role:'신춘문예와 문예지 신인상 심사를 여러 차례 맡아 온 등단 30년 차 작가', focus:'수백 편 가운데 이 원고가 첫 장에서 눈길을 끄는지, 문장에 이 사람만의 개성이 있는지, 끝까지 완성도가 유지되는지, 주제가 얼마나 깊은지를 심사 기준으로 봅니다. 당선권과의 거리를 솔직하되 다정하게 말합니다.', rubricItems:['첫 장의 흡인력','문장의 개성','구성과 완성도','주제의 깊이']},
+  grader:{icon:'📝', name:'서·논술형 채점관', desc:'채점 기준표로', role:'대입 논술과 서술형 평가를 채점해 온 채점 위원', focus:'논제 이해와 조건 충족, 논리 구조, 근거의 타당성, 표현과 분량을 채점 기준표에 따라 봅니다.', rubric:true}
+};
+const PERSONA_ORDER = {
+  poem:['poet','judge','professor','editor','reader'], novel:['novelist','judge','professor','editor','reader'], essay:['essayist','judge','professor','editor','reader'],
+  script:['dramatist','judge','professor','editor','reader'], argument:['grader','professor','editor','reader'], free:['professor','judge','editor','novelist','poet','essayist','reader']
+};
+
+/* ---- 1. 글쓰기 기초 (입문자용) ---- */
+const BASICS = {id:'basic', name:'글쓰기 기초', course:'처음 쓰는 사람을 위한 핵심 배움', genre:'free', lessons:[
+ {id:'b1', title:'글쓰기는 고쳐 쓰기다', min:100,
+  concept:'처음부터 잘 쓰는 사람은 없습니다. 작가들도 초고는 엉망이라고 말합니다. 글쓰기는 "한 번에 잘 쓰기"가 아니라 "일단 쓰고, 여러 번 고치기"입니다. 첫 레슨의 목표는 멈추지 않고 끝까지 써 보는 것입니다.',
+  points:['맞춤법과 문장은 나중에 고칩니다. 지금은 쓰기만 하세요.','10분 동안 손(엄지)을 멈추지 않는 것이 규칙입니다.','다 쓰고 나서 마음에 드는 한 문장에 표시해 보세요.'],
+  before:'', after:'', task:'타이머를 10분 맞추고, "오늘 아침부터 지금까지"를 멈추지 말고 써 보세요. 고치지 말고, 지우지 말고.'},
+ {id:'b2', title:'한 문장을 바르게', min:100,
+  concept:'좋은 글의 기본 단위는 문장입니다. 문장이 길어지면 주어와 서술어가 서로 맞지 않게 되기 쉽습니다. 한 문장에는 하나의 생각만 담는 것이 기초입니다.',
+  points:['한 문장이 두 줄을 넘으면 나눌 수 있는지 보세요.','주어(누가)와 서술어(어찌하다)가 짝이 맞는지 확인하세요.','"~것 같다", "~하는 것이다"를 줄이면 문장이 단단해집니다.'],
+  before:'내가 하고 싶은 말은 요즘 학생들이 책을 잘 읽지 않는 이유는 휴대폰 때문인 것 같다는 것이다.', after:'요즘 학생들은 책을 잘 읽지 않는다. 휴대폰이 그 시간을 가져갔다.',
+  task:'최근 쓴 메시지나 과제에서 긴 문장 3개를 골라, 한 문장에 생각 하나만 담기도록 나눠 다시 써 보세요.'},
+ {id:'b3', title:'문단 만들기', min:200,
+  concept:'문단은 하나의 중심 생각을 담은 문장들의 묶음입니다. 중심 문장 하나와 그것을 받쳐 주는 문장들로 이루어집니다. 생각이 바뀌면 문단도 바꿉니다.',
+  points:['문단의 첫 문장에 중심 생각을 두면 읽기 쉽습니다.','뒷받침 문장은 이유, 예시, 장면 중 하나입니다.','한 문단에 생각이 둘이면 둘로 나누세요.'],
+  before:'', after:'', task:'"내가 좋아하는 장소"에 대해 세 문단을 써 보세요. 문단마다 중심 문장을 하나씩 정하고 시작하세요.'},
+ {id:'b4', title:'무엇을 말하고 싶은가', min:200,
+  concept:'좋은 글은 하고 싶은 말이 분명합니다. 쓰기 전에 "이 글로 내가 하고 싶은 말"을 한 문장으로 적어 보면, 무엇을 넣고 뺄지 저절로 보입니다.',
+  points:['쓰기 전에 주제를 한 문장으로 적어 보세요.','그 문장과 상관없는 내용은 아깝더라도 빼세요.','주제는 넓게("가족") 말고 좁게("아버지가 처음 내 앞에서 운 날").'],
+  before:'우정에 대하여', after:'말없이 우산을 같이 쓰던 친구가 가르쳐 준 것',
+  task:'쓰고 싶은 주제 하나를 넓은 말에서 시작해 세 번 좁혀 보세요. 가장 좁힌 주제로 짧은 글을 써 보세요.'},
+ {id:'b5', title:'설명하지 말고 보여 주기', min:200,
+  concept:'"좋았다", "슬펐다"는 말은 독자에게 아무것도 보여 주지 못합니다. 무엇이 보였고, 들렸고, 냄새가 났는지 쓰면 독자가 스스로 느낍니다.',
+  points:['감정 단어를 장면으로 바꿔 보세요.','오감 중 두 가지 이상을 넣어 보세요.','형용사보다 구체적인 명사와 동사를 고르세요.'],
+  before:'바다는 정말 아름다웠다.', after:'파도가 물러날 때마다 발밑의 모래가 조금씩 빠져나갔다. 짠 바람에 입술이 말랐다.',
+  task:'최근 기억에 남은 장소 하나를 "좋았다·아름다웠다·슬펐다" 같은 말 없이 묘사해 보세요.'},
+ {id:'b6', title:'퇴고의 기초', min:100,
+  concept:'퇴고는 글을 다시 읽고 고치는 일입니다. 소리 내어 읽으면 눈으로는 안 보이던 어색함이 들립니다. 고칠 때는 더하기보다 빼기를 먼저 합니다.',
+  points:['소리 내어 읽고 숨이 걸리는 곳에 표시하세요.','같은 단어가 가까이 반복되면 바꾸거나 빼세요.','없어도 뜻이 통하는 문장은 지우세요.'],
+  before:'', after:'', task:'앞에서 쓴 글 하나를 열어 소리 내어 읽고, "퇴고본 저장"을 누른 뒤 고쳐 보세요. 몇 글자를 줄였는지 확인해 보세요.'}
+]};
+
+/* ---- 5. 문예창작과 전공 과목 ---- */
+const COURSES = [
+ {id:'c-debut', genre:'free', name:'투고 준비 (등단 대비)', course:'15분씩 나눠 하는 공모전·등단 준비 과정', lessons:[
+  {id:'t1', title:'심사위원은 첫 장에서 결정한다', min:150, concept:'신춘문예 같은 공모전에는 수백에서 수천 편이 들어옵니다. 심사위원은 첫 장(시는 첫 연, 소설은 첫 페이지)에서 계속 읽을지 정하는 경우가 많습니다. 첫 장이 "설명"이 아니라 "사건이나 이미지"로 시작하는지가 중요합니다.', points:['첫 문장에 인물·사물·움직임 중 하나를 두세요.','배경 설명과 인물 소개는 뒤로 미루세요.','제목과 첫 문장이 서로 질문과 대답처럼 맞물리면 좋습니다.'], before:'', after:'', task:'(15분) 지금 쓰고 있는 투고작의 첫 문장을 서로 다른 방식으로 다섯 번 다시 써 보세요. 가장 낯선 것을 고르세요.'},
+  {id:'t2', title:'투고용 시 묶음 구성하기', min:100, concept:'시 공모전은 보통 여러 편을 함께 냅니다. 묶음은 "가장 좋은 시 + 결이 다른 시"로 짜야 한 사람의 폭과 깊이를 보여 줄 수 있습니다. 비슷한 시만 모이면 오히려 약해 보입니다.', points:['가장 자신 있는 시를 맨 앞에.','소재·형식·길이가 서로 다른 시를 섞으세요.','모든 시에 공통으로 흐르는 나만의 시선이 있는지 확인하세요.'], before:'', after:'', task:'(15분) 지금까지 쓴 시 중 후보 다섯 편을 고르고, 각 시를 한 줄로 요약해 순서를 정해 보세요. 겹치는 시가 있으면 하나를 빼세요.'},
+  {id:'t3', title:'단편소설의 뼈대와 결말', min:200, concept:'단편소설은 하나의 사건, 하나의 변화에 집중합니다. 결말은 문제를 다 해결하는 것보다, 인물이 이전과 달라진 순간에서 멈출 때 오래 남습니다.', points:['이야기를 "누가-무엇을 원하다-무엇 때문에-어떻게 달라진다" 한 줄로 적어 보세요.','곁가지 인물과 사건을 줄이세요.','마지막 장면에서 설명하지 말고 이미지로 끝내 보세요.'], before:'', after:'', task:'(15분) 투고작 소설의 한 줄 요약을 쓰고, 마지막 장면을 세 가지 버전으로 짧게 구상해 보세요(각 3~4문장).'},
+  {id:'t4', title:'시나리오·희곡 공모전 형식', min:150, concept:'대본 공모전은 형식이 맞지 않으면 읽히기 전에 불리해집니다. 장면 머리(S#, 장소, 시간), 지문, 대사의 구분이 분명해야 하고, 많은 공모전이 줄거리(시놉시스)와 기획 의도를 함께 요구합니다.', points:['장면마다 S#, 장소, 낮/밤을 적으세요.','지문은 현재형으로 짧게, 카메라에 보이는 것만.','기획 의도는 "왜 지금 이 이야기인가"를 세 문장 안으로.'], before:'', after:'', task:'(15분) 투고작 대본의 기획 의도를 세 문장으로, 시놉시스를 다섯 문장으로 써 보세요.'},
+  {id:'t5', title:'투고 원고 다듬기: 제목과 마지막 점검', min:100, concept:'제목은 심사위원이 가장 먼저 읽는 문장입니다. 그리고 오탈자, 분량, 형식 오류는 작품과 상관없이 인상을 깎습니다. 마지막 점검은 글을 "남의 원고처럼" 읽는 일입니다.', points:['제목 후보를 열 개 적고, 본문에 없는 말로 된 것을 고르세요.','소리 내어 끝까지 한 번 읽으세요.','요강의 분량·형식·마감·응모 자격을 다시 확인하세요.'], before:'', after:'', task:'(15분) 투고작의 제목 후보 열 개를 적고 세 개로 줄여 보세요. 그다음 투고작 프로젝트의 체크리스트를 확인하세요.'}
+ ]},
+ {id:'c-poem', genre:'poem', name:'시창작론', course:'언어의 압축과 이미지, 리듬을 배우는 과목', lessons:[
+  {id:'p1', title:'관념 대신 이미지로', min:80, concept:'"외롭다"라고 쓰면 독자는 외로움을 이해하지만 느끼지는 못합니다. 시는 감정을 설명하는 대신, 그 감정이 보이는 장면과 사물을 건네는 장르입니다.', points:['사랑·슬픔·희망 같은 추상명사를 찾아 지워 보세요.','시각 말고 다른 감각을 하나 넣으세요.','감정 하나를 구체적인 사물 하나에 맡겨 보세요.'], before:'나는 너무 외로웠다\n세상에 혼자인 것 같았다', after:'식탁 위 수저가\n한 벌만 마른다', task:'오늘 느낀 감정 하나를 정하고, 그 감정 단어를 쓰지 않은 채 8행 이내의 시를 써 보세요.'},
+  {id:'p2', title:'낯설게 보기와 비유', min:80, concept:'비유는 두 사물 사이에 숨은 공통점을 발견하는 일입니다. 모두가 쓰는 비유는 이미 죽은 비유입니다. 익숙한 것을 처음 보는 것처럼 보는 연습이 필요합니다.', points:['"쟁반 같은 달"처럼 닳은 비유를 피하세요.','하나의 비유를 끝까지 밀고 가 보세요.','빗대는 두 대상의 거리를 조절해 보세요.'], before:'시간은 화살처럼 빠르다', after:'달력은 매일 한 장씩\n나를 접어 버린다', task:'매일 쓰는 물건 하나를 전혀 다른 무언가에 빗대고, 그 비유를 끝까지 이어 가는 시를 써 보세요.'},
+  {id:'p3', title:'행갈이와 리듬', min:60, concept:'줄을 바꾸는 자리는 숨을 쉬는 자리이자 의미가 머무는 자리입니다. 같은 문장도 어디서 끊느냐에 따라 다르게 읽힙니다.', points:['행의 마지막 단어는 저절로 강조됩니다.','소리 내어 읽으며 숨이 걸리는 곳을 찾으세요.','반복과 변주로 리듬을 만드세요.'], before:'비가 온다 너는 오지 않는다', after:'비가 온다\n너는\n오지 않는다', task:'다섯 문장짜리 일기를 쓴 뒤, 행갈이만 바꿔 시로 만들어 보세요.'},
+  {id:'p4', title:'화자와 거리', min:80, concept:'시 속의 "나"가 꼭 시인 자신일 필요는 없습니다. 누가, 누구에게, 얼마나 떨어진 곳에서 말하는지를 정하는 순간 시에 목소리가 생깁니다.', points:['화자를 사물·동물·다른 사람으로 바꿔 보세요.','말을 듣는 사람(청자)을 정하세요.','울지 않고 말하기: 감정과 거리를 두면 더 크게 울립니다.'], before:'나는 매일 그 정류장에서 너를 기다렸다', after:'(정류장 의자의 목소리로)\n그 애는 늘 왼쪽 끝에 앉았다\n오른쪽은 비워 두었다', task:'오래 쓴 물건 하나가 화자가 되어 주인에게 말을 거는 시를 써 보세요.'},
+  {id:'p5', title:'퇴고: 덜어내는 기술', min:40, concept:'시는 더할 것이 없을 때가 아니라 뺄 것이 없을 때 완성됩니다. 합평에서 가장 많이 듣는 말도 "이 행은 없어도 되지 않을까요?"입니다.', points:['앞의 이미지를 설명하는 행을 지우세요.','마지막 행이 교훈처럼 들리면 의심하세요.','부사와 조사를 줄여 보세요.'], before:'', after:'', task:'예전에 쓴 시 한 편을 열어, 분량의 30%를 덜어낸 퇴고본을 만들어 보세요.'}
+ ]},
+ {id:'c-novel', genre:'novel', name:'소설창작론', course:'인물·사건·시점·장면으로 이야기를 짓는 과목', lessons:[
+  {id:'n1', title:'인물은 욕망에서 시작한다', min:500, concept:'이야기는 무언가를 간절히 원하는 인물과 그것을 가로막는 무언가에서 시작합니다.', points:['원하는 것은 구체적으로.','장애물은 바깥(사람, 상황)과 안(두려움, 습관)에 둘 수 있습니다.','인물이 숨기는 것 하나를 정하세요.'], before:'', after:'', task:'쓰기 화면의 "인물 카드"를 채운 뒤, 이 인물이 처음 등장하는 장면을 800자 이상 써 보세요.'},
+  {id:'n2', title:'보여주기와 말하기', min:300, concept:'"그는 화가 났다"는 말하기, 화난 사람의 행동을 보여 주는 것은 보여주기입니다. 독자는 스스로 알아챘을 때 더 깊이 믿습니다.', points:['감정 단어 대신 행동과 사물로.','중요한 순간일수록 속도를 늦추세요.','요약과 장면을 구분하세요.'], before:'그는 화가 났다.', after:'그는 대답 대신 컵을 싱크대에 내려놓았다. 물이 튀었다.', task:'감정 단어를 하나도 쓰지 않고, 행동과 사물만으로 감정이 드러나는 장면을 써 보세요.'},
+  {id:'n3', title:'시점과 장면의 설계', min:500, concept:'누구의 눈으로 보느냐에 따라 독자가 아는 것이 달라집니다. 그리고 좋은 장면에는 목표, 장애물, 변화가 있습니다.', points:['한 장면 안에서 시점이 흔들리지 않게.','장면 시작 전 "인물이 원하는 것"을 한 줄로.','장면 끝에서 무언가 하나는 달라져야 합니다.'], before:'', after:'', task:'서로 다른 것을 원하는 두 인물의 장면을 한 인물의 시점으로 써 보세요.'},
+  {id:'n5', title:'대화: 말하지 않는 것', min:400, concept:'사람은 진짜 하고 싶은 말을 바로 하지 않습니다. 대화의 힘은 말 아래 깔린 의미, 서브텍스트에서 나옵니다.', points:['질문에 곧이곧대로 답하지 않게 해 보세요.','설명을 대사에 몰아넣지 마세요.','대사 사이의 행동으로 긴장을 만드세요.'], before:'"나 너한테 정말 서운해. 네가 내 생일을 잊어서."', after:'"케이크 남았던데, 먹을래?"\n"아니. 배불러."\n그녀는 냉장고 문을 닫지 않았다.', task:'헤어지기 직전의 두 사람이 "저녁 메뉴"에 대해서만 이야기하는 장면을 써 보세요.'},
+  {id:'n6', title:'첫 문장, 첫 장면', min:200, concept:'첫 문장은 독자와 맺는 첫 약속입니다. 배경 설명보다 질문을 품은 문장, 움직이는 장면으로 시작하는 연습을 합니다.', points:['날씨와 기상 장면으로 시작하는 관습을 의심하세요.','첫 문장에 작은 이상함을 숨기세요.','설명은 나중에, 조금씩.'], before:'', after:'', task:'서로 다른 소설의 첫 문장을 5개 써 보고, 하나를 골라 첫 장면을 이어 쓰세요.'}
+ ]},
+ {id:'c-essay', genre:'essay', name:'수필·산문창작', course:'경험에서 의미를 길어 올리는 과목', lessons:[
+  {id:'e1', title:'경험에서 의미로', min:500, concept:'수필은 일어난 일을 적는 일기가 아니라, 그 일에서 의미를 발견해 가는 과정입니다.', points:['한 장면을 고르세요.','의미는 선언하지 말고 장면 속에서.','"그래서 어쨌다는 거지?"를 물어 보세요.'], before:'', after:'', task:'최근 일주일 동안 이상하게 마음에 남은 장면 하나로 수필을 써 보세요.'},
+  {id:'e2', title:'디테일과 정직함', min:400, concept:'구체적인 디테일은 독자가 믿게 만드는 증거이고, 자기를 미화하지 않는 정직함이 수필의 힘입니다.', points:['고유명사, 숫자, 색, 소리를 넣으세요.','부끄러운 순간을 피하지 마세요.','눈물 나는 대목일수록 담담하게.'], before:'할머니 댁은 정겨웠다.', after:'할머니 댁 현관에는 늘 짝이 안 맞는 슬리퍼 세 켤레가 있었다.', task:'가족 중 한 사람을 형용사 없이 디테일만으로 그려 보세요.'},
+  {id:'e4', title:'시작·전환·여운의 구성', min:600, concept:'수필은 작은 장면으로 시작해, 생각이 한 번 꺾이는 전환을 거쳐, 말하지 않은 여운으로 끝날 때 오래 남습니다.', points:['첫 문단은 장면이나 사물로 여세요.','중간에 생각이 뒤집히거나 넓어지는 지점을.','교훈을 말하고 싶을 때 한 문장 앞에서 멈춰 보세요.'], before:'', after:'', task:'"버리지 못한 물건"을 소재로 시작·전환·여운의 구조를 가진 수필을 써 보세요. (쓰기 화면의 구성 메모를 활용하세요)'}
+ ]},
+ {id:'c-drama', genre:'script', name:'희곡론', course:'무대 위 인물의 행동과 대사를 배우는 과목', lessons:[
+  {id:'d1', title:'대사의 서브텍스트', min:400, concept:'사람은 진짜 하고 싶은 말을 바로 하지 않습니다. 대사의 힘은 말 아래 깔린 의미에서 나옵니다.', points:['질문에 다른 이야기로 답하게 해 보세요.','"너도 알다시피" 같은 설명 대사를 지우세요.','침묵과 행동 지문도 대사입니다.'], before:'"나 너한테 정말 서운해."', after:'"케이크 남았던데, 먹을래?"\n"아니. 배불러."', task:'오랜만에 만난 형제가 아버지의 병에 대해 한 번도 직접 말하지 않는 장면을 써 보세요.'}
+ ]},
+ {id:'c-scenario', genre:'script', name:'시나리오 작법', course:'카메라에 보이는 것으로 이야기를 쓰는 과목', lessons:[
+  {id:'s1', title:'보이는 것만 쓴다', min:300, concept:'시나리오의 지문에는 카메라에 찍히는 것만 씁니다. 속마음은 행동과 대사로 바꿔야 합니다.', points:['지문은 현재형, 짧게.','장면 머리(S#1. 장소 - 시간)로 시작.','"~를 느낀다" 대신 보이는 행동.'], before:'민수는 지난 일을 떠올리며 후회한다.', after:'S#3. 민수의 방 - 밤\n민수, 휴대폰을 들었다 내려놓는다. 다시 든다.', task:'대사 없이 지문만으로, 한 인물의 감정 변화가 보이는 장면을 써 보세요.'},
+  {id:'s2', title:'장면의 목표와 장애물', min:400, concept:'모든 장면은 누군가 무언가를 원하고, 누군가 그것을 막는 데서 움직입니다.', points:['장면마다 "누가 무엇을 원하는가".','장애물은 상대 인물일 때 가장 강합니다.','들어올 때와 다른 상태로 끝내세요.'], before:'', after:'', task:'면접장, 병원 대기실, 마지막 버스 중 한 곳에서 원하는 것이 충돌하는 두 인물의 장면을 써 보세요.'}
+ ]},
+ {id:'c-child', genre:'free', name:'아동문학창작', course:'어린 독자를 위한 동화와 동시를 쓰는 과목', lessons:[
+  {id:'k1', title:'아이의 눈높이', min:300, concept:'동화는 쉬운 말로 쓴 어른의 이야기가 아니라, 아이의 눈으로 본 세계입니다. 교훈을 가르치려 들면 아이들은 금방 알아챕니다.', points:['주인공은 아이가 공감할 문제를 가져야 합니다.','어른이 문제를 대신 해결하지 않게 하세요.','교훈을 마지막에 말로 하지 마세요.'], before:'', after:'', task:'잃어버린 물건을 스스로 찾아 나서는 아이가 주인공인 짧은 동화를 써 보세요.'}
+ ]},
+ {id:'c-critic', genre:'free', name:'문학비평', course:'작품을 깊이 읽고 근거를 들어 말하는 과목', lessons:[
+  {id:'r1', title:'근거를 들어 읽기', min:300, concept:'비평은 "좋았다/싫었다"가 아니라 "작품의 어느 부분이 어떻게 그런 효과를 내는가"를 말하는 일입니다. 잘 읽는 사람이 잘 씁니다.', points:['인상을 먼저 적고, 그 인상을 만든 구절을 찾으세요.','인물, 구조, 문체, 시점 중 하나에 집중하세요.','작가의 의도보다 텍스트에 있는 것을 근거로.'], before:'', after:'', task:'최근 읽은 책이나 본 영화 한 편에 대해, 구체적인 장면 두 개를 근거로 짧은 비평을 써 보세요.'}
+ ]},
+ {id:'c-workshop', genre:'free', name:'합평 워크숍', course:'서로의 글을 읽고 말하는 문창과의 핵심 수업', lessons:[
+  {id:'w1', title:'합평을 받는 법', min:100, concept:'합평은 문창과 수업의 중심입니다. 다른 사람이 내 글을 읽고 잘된 점, 질문, 아쉬운 점을 말해 줍니다. 핵심은 변명하지 않고 듣는 것, 그리고 모든 의견을 따르지 않고 골라 듣는 것입니다.', points:['합평을 받는 동안에는 설명하지 말고 메모만 하세요.','여러 사람이 같은 곳을 짚으면 그곳은 꼭 고치세요.','내 의도와 다른 조언은 의도를 더 분명히 하는 계기로 쓰세요.'], before:'', after:'', task:'예전에 쓴 글 하나를 열어 서로 다른 작가 두 명에게 합평을 받아 보세요. 두 합평이 같이 짚은 곳을 찾아 퇴고하세요.'}
+ ]}
+];
+const ARG = {id:'arg', genre:'argument', name:'서·논술 쓰기 레슨', course:'서·논술형 답안의 기본기', lessons:[
+ {id:'a1', title:'문제가 묻는 것부터', min:150, concept:'논술의 첫 실패는 문제를 잘못 읽는 데서 시작합니다. 발문에 숨은 조건(분량, 제시문 활용, 입장 선택, 비교·요약 지시)을 먼저 표시하세요.', points:['발문의 동사(요약하라, 비교하라, 평가하라)에 밑줄.','조건을 번호로 적고, 쓰고 나서 하나씩 확인.','제시문은 주장과 근거를 나눠 읽기.'], before:'', after:'', task:'「제시문 (가)와 (나)의 관점을 비교하고, 이를 바탕으로 AI 시대 글쓰기 교육의 필요성에 대한 견해를 600자 내외로 논술하시오.」의 조건을 모두 찾아 번호로 정리하고 개요를 써 보세요.'},
+ {id:'a2', title:'주장-근거-예시의 뼈대', min:400, concept:'설득력 있는 글은 "주장 → 근거 → 예시 → 다시 주장"의 뼈대를 가집니다. 근거 없는 주장은 의견일 뿐이고, 예시 없는 근거는 공허합니다.', points:['주장은 첫 문단에서 한 문장으로.','근거는 "왜냐하면"으로 시작해도 말이 되는지.','예시는 구체적인 사례·자료·경험으로.'], before:'', after:'', task:'"고등학교에서 휴대폰 사용을 전면 금지해야 한다"에 찬반 입장을 정하고, 근거 2개와 예시를 갖춘 600자 글을 써 보세요.'},
+ {id:'a3', title:'반론을 먼저 꺼내기', min:400, concept:'반대 입장을 알고도 내 주장이 왜 더 타당한지 보여 주는 글이 높은 평가를 받습니다.', points:['"물론 ~라는 지적도 있다"로 반론을 공정하게.','반론의 일부를 인정하되 핵심에서 반박.','일부러 약하게 만든 반론은 감점 요인.'], before:'', after:'', task:'앞에서 쓴 주장에 대해 가장 강력한 반론 하나를 세우고, 인정하면서도 넘어서는 문단을 포함한 글을 써 보세요.'}
+]};
+const LESSON_MAP={}; [BASICS,...COURSES,ARG].forEach(t=>t.lessons.forEach((l,i)=>LESSON_MAP[l.id]={...l,track:t,idx:i}));
+
+/* ---- +α 서·논술형 연습 문항 ---- */
+const PROBLEMS = [
+ {id:'q1', type:'요약형', title:'디지털 기록과 기억', min:15, target:150,
+  passage:'사람들은 스마트폰으로 하루에도 수십 장의 사진을 찍는다. 기록은 늘었지만, 정작 그 순간을 또렷이 기억하는 사람은 줄었다는 연구가 있다. 기록을 기계에 맡기는 순간 뇌가 그 일을 기억할 필요가 없다고 판단하기 때문이다. 기록이 기억을 돕는 도구가 되려면, 찍는 것보다 다시 꺼내 보고 말로 정리하는 과정이 필요하다.',
+  question:'제시문의 핵심 내용을 150자 내외로 요약하시오. (자신의 견해는 쓰지 말 것)'},
+ {id:'q2', type:'비교형', title:'기술과 일자리', min:25, target:300,
+  passage:'(가) 새로운 기술은 늘 일부 직업을 없앴지만, 그보다 더 많은 새 직업을 만들어 왔다. 인공지능도 결국 사람이 하기 싫은 반복 업무를 덜어 주고, 더 창의적인 일에 집중하게 할 것이다.\n\n(나) 이번 기술 변화는 속도와 범위가 다르다. 과거에는 일자리가 바뀌는 데 한 세대가 걸렸지만, 지금은 몇 년이면 충분하다. 새 직업이 생기더라도 일자리를 잃은 사람이 그 자리로 옮겨 가기는 어렵다.',
+  question:'(가)와 (나)의 관점을 공통점과 차이점을 중심으로 300자 내외로 비교하시오.'},
+ {id:'q3', type:'견해형', title:'AI가 쓴 글과 과제', min:40, target:600,
+  passage:'최근 많은 학생이 인공지능으로 과제 글을 작성한다. 일부 학교는 이를 금지하고, 일부 학교는 사용 사실을 밝히면 허용한다.',
+  question:'학생이 AI로 작성한 글을 과제로 제출하는 것을 허용해야 하는지에 대한 자신의 견해를, 예상되는 반론을 포함하여 600자 내외로 논술하시오.'},
+ {id:'q4', type:'자료해석형', title:'청소년 독서 시간', min:25, target:400,
+  passage:'[연습용 가상 자료] 청소년 하루 평균 독서 시간\n2016년 32분 → 2021년 25분 → 2026년 18분\n같은 기간 하루 평균 짧은 동영상 시청 시간\n2016년 15분 → 2021년 48분 → 2026년 71분',
+  question:'자료에서 드러나는 변화를 해석하고, 그 원인과 대책을 400자 내외로 서술하시오.'},
+ {id:'q6', type:'견해형', title:'공공장소의 글쓰기', min:30, target:500,
+  passage:'도시 곳곳에 시민이 짧은 글을 써 붙일 수 있는 "문장 게시판"이 생기고 있다. 지지하는 쪽은 일상 속 표현의 장이 된다고 말하고, 반대하는 쪽은 관리가 어렵고 갈등을 부를 수 있다고 말한다.',
+  question:'"문장 게시판"을 확대해야 하는가에 대해, 한쪽 입장을 정하고 근거 두 가지와 예상 반론에 대한 재반박을 포함하여 500자 내외로 논술하시오.'},
+ {id:'q7', type:'비교형', title:'두 편의 산문', min:20, target:300,
+  passage:'[연습용 창작 산문]\n(가) 할머니의 부엌은 늘 소란했다. 끓는 소리, 칼 소리, 라디오 소리. 그 소란 속에서 나는 가장 조용해졌다.\n\n(나) 혼자 사는 방의 부엌은 조용하다. 냉장고 소리만 들린다. 나는 그 조용함 속에서 자꾸 혼잣말을 한다.',
+  question:'(가)와 (나)에서 "소리"와 "나"의 관계가 어떻게 다른지 300자 내외로 비교하여 서술하시오.'},
+ {id:'q5', type:'문학 서술형', title:'화자의 정서 변화', min:15, target:200,
+  passage:'[연습용 창작 시]\n아침엔 창문을 닫았다\n지난밤 바람이 너무 많은 말을 해서\n\n점심엔 커튼을 걷었다\n먼지 속에도 빛이 서 있었다\n\n저녁엔 창문을 열어 두었다\n돌아올 바람의 자리를 위해',
+  question:'시간의 흐름에 따른 화자의 정서 변화를 시어를 근거로 200자 내외로 서술하시오.'}
+];
+const PROBLEM_MAP={}; PROBLEMS.forEach(p=>PROBLEM_MAP[p.id]=p);
+
+const DAILY = [
+ {g:'poem', t:'창문에 비친 내 얼굴을 처음 보는 사람처럼 묘사해 보세요.'},{g:'essay', t:'오늘 들은 말 중 가장 오래 남은 한 문장에서 시작하는 글.'},
+ {g:'novel', t:'택배 상자에 내 이름이 아닌 다른 이름이 적혀 있다. 그런데 주소는 우리 집이다.'},{g:'poem', t:'"아직"이라는 단어를 쓰지 않고 기다림에 대한 시를 써 보세요.'},
+ {g:'essay', t:'내가 가장 오래 가지고 있는 물건과 그것을 버리지 못하는 이유.'},{g:'script', t:'편의점 야간 아르바이트생과 매일 같은 시간에 오는 손님. 오늘은 그 손님이 오지 않았다.'},
+ {g:'argument', t:'"시험 점수는 노력을 공정하게 반영한다"에 대한 나의 입장을 400자로.'},{g:'novel', t:'열 살의 내가 지금의 나에게 보낸 편지가 도착했다.'},
+ {g:'poem', t:'부엌에서 나는 소리 세 가지로 한 사람을 그려 보세요.'},{g:'essay', t:'처음으로 혼자 무언가를 해냈던 날.'},
+ {g:'novel', t:'두 사람이 같은 우산을 쓰고 걷지만, 서로 다른 곳에 가고 싶어 한다.'},{g:'poem', t:'계절이 바뀌는 걸 가장 먼저 알아챈 몸의 한 부분에 대하여.'},
+ {g:'argument', t:'청소년의 SNS 사용 시간을 법으로 제한해야 할까? 근거 두 개로.'},{g:'essay', t:'지금 내 가방 속 물건으로 쓰는 자기소개.'},
+ {g:'script', t:'이사 가는 날, 텅 빈 방에서 마지막으로 나누는 대화.'},{g:'novel', t:'매일 같은 꿈을 꾸던 인물이, 오늘 처음으로 꿈의 결말을 본다.'},
+ {g:'poem', t:'사라진 가게의 간판에 대하여.'},{g:'essay', t:'누군가에게 끝내 하지 못한 사과.'},
+ {g:'novel', t:'오래된 사진 속, 아무도 모르는 사람이 한 명 서 있다.'},{g:'poem', t:'한밤중 냉장고 불빛을 화자로 삼아 보세요.'},
+ {g:'essay', t:'내가 자주 걷는 길의 냄새.'},{g:'script', t:'결혼식장 주차장에서 마주친 옛 친구 둘.'},
+ {g:'novel', t:'“그날 엘리베이터에는 버튼이 하나 더 있었다.”로 시작하는 이야기.'}
+];
+const DAY_KEY=Math.floor((Date.now()+9*3600e3)/86400e3);
+/* ============ 상태 & 유틸 ============ */
+const S = { profile:null, writings:{}, quotes:{}, ideas:{}, projects:{}, routineOffset:0, tab:'home', sub:null, seg:{learn:'basic', insp:'idea', write:'mine'}, dailyOffset:0, selectMode:false, selected:new Set(), timers:{}, aiPromise:null, aiImages:false, busy:false };
+const $ = (s,el=document)=>el.querySelector(s);
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = ()=> Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const today = ()=>new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
+const fmtDate = t=>{const d=new Date(t);return `${d.getMonth()+1}월 ${d.getDate()}일`};
+const fmtTime = t=>{const d=new Date(t);return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`};
+const chars = s=>(s||'').length, charsNoSp = s=>(s||'').replace(/\s/g,'').length;
+const defaultProfile = ()=>({lessonsDone:{}, days:[], styleHistory:[], createdAt:Date.now()});
+function toast(msg, ms=2400){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(), ms); }
+function sheet(html, onMount){
+  const scrim=document.createElement('div'); scrim.className='scrim';
+  scrim.innerHTML=`<div class="sheet" role="dialog"><div class="grab"></div>${html}</div>`;
+  scrim.addEventListener('click',e=>{ if(e.target===scrim) close(); });
+  function close(){ scrim.remove(); }
+  document.body.appendChild(scrim); onMount && onMount($('.sheet',scrim), close); return close;
+}
+function confirmSheet(msg, okLabel, onOk){
+  sheet(`<h3 style="margin-bottom:10px">${esc(msg)}</h3><div style="display:flex;gap:8px;margin-top:16px"><button class="btn block" data-x>취소</button><button class="btn primary block" data-ok>${esc(okLabel)}</button></div>`,
+  (el,close)=>{ $('[data-x]',el).onclick=close; $('[data-ok]',el).onclick=()=>{close();onOk();}; });
+}
+
+/* ============ 저장소 ============ */
+const LS_KEY='writing-app.v2';
+const COLS=['writings','quotes','ideas','projects'];
+const Store = {
+  mode:'memory', base:null, q:{},
+  async init(){
+    let db=null, user=null, id=null;
+    try{ if(window.claude && typeof claude.use==='function'){ [db,user]=await Promise.all([claude.use('db'),claude.use('user')]); if(user) id=await user.id(); } }catch(e){}
+    if(db && id){ this.mode='db'; this.base=db.doc('data/users/'+id+'/profile'); return; }
+    try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); this.mode='local'; }catch(e){ this.mode='memory'; }
+  },
+  async load(){
+    if(this.mode==='db'){
+      try{
+        const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),10000));
+        const [p,...cs]=await Promise.race([Promise.all([this.base.get(), ...COLS.map(c=>this.base.collection(c).get())]), timeout]);
+        S.profile = p.exists ? {...defaultProfile(), ...structuredClone(p.data())} : defaultProfile();
+        cs.forEach((snap,i)=>snap.docs.forEach(d=>{ if(d.exists) S[COLS[i]][d.id]=structuredClone(d.data()); }));
+        return;
+      }catch(e){ this.mode='local'; this.failed=true; }
+    }
+    if(this.mode==='local'){ try{ const r=JSON.parse(localStorage.getItem(LS_KEY)||'null'); if(r){ S.profile={...defaultProfile(),...r.profile}; COLS.forEach(c=>S[c]=r[c]||{}); } }catch(e){} }
+    if(!S.profile) S.profile=defaultProfile();
+  },
+  _local(){ if(this.mode!=='local') return; try{ localStorage.setItem(LS_KEY, JSON.stringify({profile:S.profile, writings:S.writings, quotes:S.quotes, ideas:S.ideas, projects:S.projects})); }catch(e){ toast('기기 저장 공간이 부족해요'); } },
+  _chain(key, fn){
+    const prev=this.q[key]||Promise.resolve();
+    const next=prev.catch(()=>{}).then(fn).catch(e=>{
+      if(e&&e.code==='quota_exceeded') toast('저장 공간이 가득 찼어요. 오래된 글을 정리해 주세요.');
+      else if(e&&e.code==='unavailable') return new Promise(r=>setTimeout(r,800+Math.random()*800)).then(fn).catch(()=>toast('저장에 실패했어요'));
+      else toast('저장에 실패했어요');
+      throw e;
+    });
+    this.q[key]=next; return next;
+  },
+  saveProfile(){ if(this.mode==='db') return this._chain('profile',()=>this.base.set(structuredClone(S.profile))); this._local(); return Promise.resolve(); },
+  save(col, o){ if(col==='writings'){ fitDoc(o); } o=col==='writings'?Object.fromEntries(Object.entries(o).filter(([k])=>k!=='_savedBody')):o; if(this.mode==='db') return this._chain(col+o.id,()=>this.base.collection(col).doc(o.id).set(structuredClone(o))); this._local(); return Promise.resolve(); },
+  del(col, id){ if(this.mode==='db') return this._chain(col+id,()=>this.base.collection(col).doc(id).delete()); this._local(); return Promise.resolve(); }
+};
+function byteSize(o){ try{ return new Blob([JSON.stringify(o)]).size; }catch(e){ return JSON.stringify(o).length*3; } }
+function fitDoc(w){
+  for(const k of ['versions','collab','feedbacks']) while(byteSize(w)>230000 && (w[k]||[]).length>1) w[k].shift();
+}
+function markDay(){ const d=today(), days=S.profile.days||(S.profile.days=[]); if(!days.includes(d)){ days.push(d); if(days.length>120) days.shift(); Store.saveProfile(); } }
+
+/* ============ AI ============ */
+async function getAI(){
+  if(!S.aiPromise) S.aiPromise=(async()=>{ try{ if(!(window.claude&&claude.use)) return null; const ai=await claude.use('sample'); if(ai&&ai.limits){ try{ const l=await ai.limits(); S.aiImages=!!(l&&l.images); }catch(e){} } return ai; }catch(e){ return null; } })();
+  return S.aiPromise;
+}
+function parseJSON(t){ const s=t.indexOf('{'), e=t.lastIndexOf('}'); if(s<0||e<0) throw new Error('형식 오류'); return JSON.parse(t.slice(s,e+1)); }
+async function askAI(prompt, opts={}){
+  const ai=await getAI(); if(!ai) throw {code:'no_ai'};
+  const o={modelTier:opts.tier||'default'}; if(opts.images) o.images=opts.images;
+  const r=await ai(prompt,o); return parseJSON(r.text||'');
+}
+function aiErrorMsg(e){
+  if(e&&e.code==='no_ai') return IS_PAGES?'AI 기능(피드백·협동·사진 인식 등)은 claude.ai 버전 뭉작가에서 쓸 수 있어요.':'AI 기능을 이 화면에서 쓸 수 없어요. claude.ai에서 앱을 열어 주세요.';
+  if(e&&e.code==='not_granted') return 'AI 사용 권한이 허용되지 않았어요.';
+  if(e&&e.code==='rate_limited') return 'AI 요청이 많아요. 잠시 후 다시 시도해 주세요.';
+  return 'AI 응답을 받지 못했어요. 다시 시도해 주세요.';
+}
+function aiNoteHTML(e){ // [추가]
+  const link=(e&&e.code==='no_ai')?`<br><a href="${ARTIFACT_URL}" target="_blank" rel="noopener" style="color:var(--red);font-weight:700">claude.ai에서 뭉작가 열기 ›</a><br><span class="small">기기를 옮길 땐 '나의 기록 → 백업 코드'로 글을 옮기세요.</span>`:'';
+  return `<div class="note">${esc(aiErrorMsg(e))}${link}</div>`;
+}
+const loadingHTML = m=>`<div class="loading"><div class="spin"></div><div>${esc(m)}</div></div>`;
+const NO_GHOSTWRITE = `[절대 규칙 — 이 앱은 AI에 의존하지 않고 사용자가 직접 쓰는 협동적 글쓰기 앱입니다]
+- 사용자를 대신해 문장·행·문단을 써 주지 마세요. 고쳐 쓴 예시 문장, 대체 문장, "이렇게 바꿔 보세요: …" 같은 문장 제시는 모두 금지입니다.
+- 무엇이 왜 그런지, 어떤 방향으로 무엇을 시도해 볼지만 말하세요.
+- 인용(quote)은 반드시 원문에 실제로 있는 구절을 30자 이내로 그대로 가져오세요.
+- 글쓰기를 처음 배우는 사람도 이해할 수 있는 쉬운 한국어로, 정직하되 다정하게 말하세요.`;
+
+function styleContext(){
+  const s=(S.profile.styleHistory||[]).slice(-1)[0];
+  return s?`\n[이 작가의 문체 프로필] 키워드: ${(s.keywords||[]).join(', ')} / ${s.portrait||''}\n이 작가 고유의 목소리를 지우지 말고 살리는 방향으로 도우세요.`:'';
+}
+function streak(){
+  const set=new Set(S.profile.days||[]); let n=0, t=Date.now()+9*3600e3;
+  if(!set.has(new Date(t).toISOString().slice(0,10))) t-=86400e3;
+  while(set.has(new Date(t).toISOString().slice(0,10))){ n++; t-=86400e3; } return n;
+}
+/* ============ 라우팅 ============ */
+const TABS=['home','learn','write','insp','exam','style'];
+function setTab(t){ S.tab=t; document.querySelectorAll('nav.bottom a').forEach(a=>a.classList.toggle('on',a.dataset.tab===t)); }
+function route(){ const h=(location.hash||'#home').slice(1); const t=TABS.includes(h)?h:'home'; if(t!==S.tab){ S.sub=null; S.selectMode=false; S.selected.clear(); } setTab(t); render(); }
+function go(tab, sub, seg){ if(seg) S.seg[tab]=seg; if(location.hash!=='#'+tab){ S.tab=null; S._pendingSub=sub||null; location.hash=tab; } else { S.sub=sub||null; render(); } }
+document.querySelectorAll('nav.bottom a').forEach(a=>a.addEventListener('click',e=>{ if(location.hash==='#'+a.dataset.tab){ e.preventDefault(); if(S.editorCommit&&S.tab==='write'&&S.sub) S.editorCommit(); S.sub=null; render(); } }));
+window.addEventListener('hashchange',()=>{ const sub=S._pendingSub; S._pendingSub=null; route(); if(sub){ S.sub=sub; render(); } });
+function clearTimers(){ Object.values(S.timers).forEach(t=>clearInterval(t)); S.timers={}; }
+function render(){
+  const v=$('#view'); clearTimers(); $('#weaveBar').hidden=true;
+  if(S.tab==='home') S.sub==='bench' ? (v.innerHTML=benchHTML(), bindBack(v,'home')) : (v.innerHTML=homeHTML(), bindHome(v));
+  else if(S.tab==='learn') S.sub ? (v.innerHTML=lessonHTML(S.sub), bindLesson(v)) : (v.innerHTML=learnHTML(), bindLearn(v));
+  else if(S.tab==='write'){
+    if(S.sub&&S.writings[S.sub]) v.innerHTML=editorHTML(S.writings[S.sub]), bindEditor(v,S.writings[S.sub]);
+    else if(S.sub&&S.sub.startsWith('p:')&&S.projects[S.sub.slice(2)]) v.innerHTML=projectHTML(S.projects[S.sub.slice(2)]), bindProject(v,S.projects[S.sub.slice(2)]);
+    else v.innerHTML=writeListHTML(), bindWriteList(v);
+  }
+  else if(S.tab==='insp') S.sub&&S.ideas[S.sub] ? (v.innerHTML=ideaHTML(S.ideas[S.sub]), bindIdea(v,S.ideas[S.sub])) : (v.innerHTML=inspHTML(), bindInsp(v));
+  else if(S.tab==='style') v.innerHTML=styleHTML(), bindStyle(v);
+  else if(S.tab==='exam') S.sub ? (v.innerHTML=problemHTML(S.sub), bindProblem(v)) : (v.innerHTML=examHTML(), bindExam(v));
+  window.scrollTo(0,0);
+}
+function bindBack(v,tab){ const b=$('[data-back]',v); if(b) b.onclick=()=>{ S.sub=null; render(); }; }
+
+/* ============ 홈 = 제작 개요 ============ */
+const OVERVIEW = [
+ {no:'1', memo:'글쓰기의 "핵심 배움"에 관하여 무지한 자 대상', label:'글쓰기 기초', sub:'처음 쓰는 사람을 위한 6단계 기초 레슨', go:['learn',null,'basic']},
+ {no:'2', memo:'AI에 의존하지 않고 나만의 문체가 완성되는 협동적 글쓰기', label:'협동 글쓰기', sub:'내가 쓰고, AI 동료는 질문하고 방향만 짚어요', go:['write']},
+ {no:'3', memo:'장르에 따라서 다른 방식', label:'장르별 글쓰기 도구', sub:'시·소설·수필·시나리오·논술마다 다른 쓰기 화면', go:['write']},
+ {no:'4', memo:'구글플레이에 이러한 앱이 존재하는가? 벤치마크', label:'벤치마크', sub:'비슷한 앱들과 이 앱의 차이', go:['home','bench']},
+ {no:'5', memo:'문예창작과 전공 과목은 무엇이고 무엇을 배우는가?', label:'문창과 전공 강의', sub:'시창작론부터 합평 워크숍까지 8개 과목', go:['learn',null,'major']},
+ {no:'6', memo:'작가의 글 소재·영감을 발전시킬 수 있는가?', label:'소재·영감 발전', sub:'떠오른 소재를 질문으로 키워 글감으로', go:['insp',null,'idea']},
+ {no:'7', memo:'AI가 전문 작가·현직 작가의 역량으로 피드백', label:'작가 피드백', sub:'시인·소설가·수필가·극작가·편집자·교수의 합평', go:['write']},
+ {no:'8', memo:'책에서 수집한 문구·소재를 사진이나 직접 작성으로 발전', label:'책 문구 수집', sub:'사진으로 찍거나 직접 적고, 내 글로 발전시키기', go:['insp',null,'quote']},
+ {no:'+α', memo:'서술형·논술형 수능이 된다고 가정 시 학습 앱', label:'서·논술형 대비', sub:'유형별 연습 문항, 논술 레슨, 실전 타이머, 채점 기준표 피드백', go:['exam']}
+];
+const EXTRAS = [
+ {icon:'🪞', label:'나의 문체 분석', sub:'쓴 글이 쌓이면 문체 키워드·습관·강점과 변화를 보여 줘요', go:['style']},
+ {icon:'🤔', label:'막혔어요', sub:'쓰다 막히면 질문과 5분짜리 작은 행동을 받아요 (쓰기 화면)', go:['write']},
+ {icon:'🧵', label:'필사·변주·글감 엮기', sub:'수집한 문구를 필사하고, 구조를 빌려 변주하고, 여러 문구를 엮어 글감으로', go:['insp',null,'quote']},
+ {icon:'☀️', label:'오늘의 글감·연속 기록', sub:'매일 바뀌는 장르별 글감과 연속으로 쓴 날 (홈 상단)', go:null},
+ {icon:'⏱', label:'오늘의 15분 루틴', sub:'목표·장르·하루 시간에 맞춘 요일별 짧은 쓰기 (홈 맨 위)', go:null},
+ {icon:'🗂️', label:'투고작 프로젝트', sub:'조각 모으기 → 초고 잇기 → 퇴고 → 투고 준비 체크리스트', go:['write']},
+ {icon:'🏆', label:'공모전 심사위원 피드백', sub:'첫 장의 흡인력·문장의 개성·완성도·주제를 심사 기준표로', go:['write']},
+ {icon:'🏅', label:'주간 목표·성장 그래프·배지', sub:'나의 문체 탭에서 확인', go:['style']},
+ {icon:'👀', label:'첫 독자 피드백', sub:'비평 용어 없이 어디서 빠져들고 멈췄는지 (작가 피드백에 추가)', go:['write']}
+];
+function homeHTML(){
+  const ws=Object.values(S.writings).sort((a,b)=>b.updatedAt-a.updatedAt);
+  const p=DAILY[(DAY_KEY+S.dailyOffset)%DAILY.length]; const ap=activeProject();
+  return `${S.profile.onboard?today15HTML():`<div class="card hero"><div class="label">시작하기</div><div class="prompt">목표와 장르, 하루 시간을 알려 주시면 매일의 루틴을 추천해 드려요.</div><div class="row"><button class="btn primary" data-onb>시작 설정</button></div></div>`}
+  ${ap?`<h2 style="margin-top:18px">진행 중인 투고작</h2>${projCardHTML(ap)}`:(S.profile.onboard?`<button class="opt" data-newp2><div class="ic">🗂️</div><div><b>투고작 프로젝트 만들기</b><span>매일의 조각을 공모전 투고작 한 편으로 모아요</span></div></button>`:'')}
+  <div class="card tight"><div class="small muted">오늘의 글감 · ${esc(GENRES[p.g].name)}</div><div style="font-family:var(--serif);font-size:16px;margin:4px 0 8px">${esc(p.t)}</div>
+    <div style="display:flex;gap:6px"><button class="btn sm primary" data-daily>이 글감으로 쓰기</button><button class="btn sm" data-shuffle>다른 글감</button></div></div>
+  <div class="stats">
+    <div class="stat"><b>${streak()}</b><span>연속 쓴 날</span></div>
+    <div class="stat"><b>${ws.length}</b><span>쓴 글</span></div>
+    <div class="stat"><b>${Object.keys(S.profile.lessonsDone||{}).length}/${Object.keys(LESSON_MAP).length}</b><span>마친 레슨</span></div>
+  </div>
+  <div class="card principle"><div class="stamp">원칙</div><div class="small"><b>AI는 질문하고, 문장은 당신이 씁니다.</b><br>AI는 대신 써 주지 않아요. 함께 고민하고, 묻고, 방향만 짚어 줍니다.<br><button class="btn sm" data-start style="margin-top:6px">처음이라면 기초부터</button></div></div>
+  ${ws.length?`<h2>이어 쓰기</h2>${ws.slice(0,2).map(writingRow).join('')}`:''}
+  <h2>제작 개요</h2>
+  ${OVERVIEW.map((o,i)=>`<button class="ov-item" data-ov="${i}"><div class="no">${esc(o.no)}</div><div><span class="memo-q">${esc(o.memo)}</span><b>→ ${esc(o.label)}</b><span>${esc(o.sub)}</span></div></button>`).join('')}
+  <h2>덧붙인 기능</h2>
+  ${EXTRAS.map((o,i)=>`<button class="ov-item" data-ex="${i}"><div class="no" style="font-size:18px">${o.icon}</div><div><b>${esc(o.label)}</b><span>${esc(o.sub)}</span></div></button>`).join('')}`;
+}
+function bindHome(v){
+  bindOpenRows(v);
+  $('[data-start]',v).onclick=()=>go('learn',null,'basic');
+  $('[data-shuffle]',v).onclick=()=>{ S.dailyOffset++; render(); };
+  const r1=$('[data-r15]',v); if(r1) r1.onclick=startRoutine;
+  const r2=$('[data-r15s]',v); if(r2) r2.onclick=()=>{ S.routineOffset=(S.routineOffset||0)+1; render(); };
+  const ob=$('[data-onb]',v); if(ob) ob.onclick=()=>showOnboarding();
+  const np=$('[data-newp2]',v); if(np) np.onclick=newProjectSheet;
+  v.querySelectorAll('[data-proj]').forEach(b=>b.onclick=()=>{ S.seg.write='proj'; go('write','p:'+b.dataset.proj); });
+  $('[data-daily]',v).onclick=()=>{ const p=DAILY[(DAY_KEY+S.dailyOffset)%DAILY.length]; newWriting({genre:p.g, prompt:p.t}); };
+  v.querySelectorAll('[data-ex]').forEach(b=>b.onclick=()=>{ const g=EXTRAS[+b.dataset.ex].go; if(g) go(g[0],g[1],g[2]); else window.scrollTo({top:0,behavior:'smooth'}); });
+  v.querySelectorAll('[data-ov]').forEach(b=>b.onclick=()=>{ const g=OVERVIEW[+b.dataset.ov].go; go(g[0],g[1],g[2]); });
+}
+
+/* ---- 4. 벤치마크 ---- */
+function benchHTML(){
+  const rows=[
+    ['Sudowrite','소설 특화 AI. 초고 생성, 장면 확장, 원고 전체를 읽는 피드백 채팅','유료 전용, 영어 중심, AI가 문장을 생성해 주는 기능이 중심'],
+    ['ProWritingAid','문법·스타일 교정, 20여 종의 글쓰기 리포트, 줄거리·인물에 대한 구조 피드백','영어 중심, 교정·분석 위주라 배움의 순서(커리큘럼)는 없음'],
+    ['국내 "AI 글쓰기 도우미"류 앱','글 생성, 재작성, 맞춤법 교정, 이메일·SNS 글 작성','대신 써 주기 중심, 창작 장르별 학습이나 합평 구조 없음'],
+    ['범용 AI 챗봇','무엇이든 질문하고 글을 받아볼 수 있음','배움의 구조가 없고, 대신 써 주는 데 의존하기 쉬움']
+  ];
+  return `<button class="back" data-back>‹ 개요</button>
+  <h2 style="margin-top:4px">4. 벤치마크</h2>
+  <p class="muted small" style="margin:0 0 8px">구글플레이·앱스토어와 웹의 대표적인 AI 글쓰기 도구를 2026년 11월 기준으로 살펴봤어요. (스토어 전수 조사는 아니에요.)</p>
+  <div class="card"><table class="bm"><tr><th>앱</th><th>주요 기능</th><th>한계</th></tr>${rows.map(r=>`<tr><td><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join('')}</table></div>
+  <h2>이 앱의 차이</h2>
+  <div class="card"><ul style="padding-left:20px;margin:0">
+    <li><b>대신 쓰지 않음</b> — AI는 질문·합평·방향 제시만 하고, 모든 문장은 사용자가 씀 (개요 2)</li>
+    <li><b>입문자 기초 + 문창과 전공 커리큘럼</b> — 배우는 순서가 있음 (개요 1, 5)</li>
+    <li><b>장르마다 다른 쓰기 화면</b> (개요 3)</li>
+    <li><b>현직 작가 관점별 합평</b> (개요 7)</li>
+    <li><b>한국어 창작과 서·논술형 대비</b> (개요 +α)</li>
+  </ul></div>`;
+}
+
+/* ============ 배우기 (1 기초 / 5 전공) ============ */
+function trackHTML(t){
+  const done=t.lessons.filter(l=>S.profile.lessonsDone[l.id]).length;
+  return `<div class="track"><div class="track-head"><div><h3>${esc(t.name)}</h3><div class="course">${esc(t.course)}</div></div>
+    <div style="text-align:right;min-width:64px"><span class="small muted">${done}/${t.lessons.length}</span><div class="bar"><i style="width:${done/t.lessons.length*100}%"></i></div></div></div>
+    ${t.lessons.map((l,i)=>`<button class="lesson-row ${S.profile.lessonsDone[l.id]?'done':''}" data-lesson="${l.id}"><span class="num">${S.profile.lessonsDone[l.id]?'✓':i+1}</span><span style="flex:1">${esc(l.title)}</span><span class="muted">›</span></button>`).join('')}</div>`;
+}
+function learnHTML(){
+  const seg=S.seg.learn;
+  return `<div class="seg"><button data-seg="basic" class="${seg==='basic'?'on':''}">1 · 글쓰기 기초</button><button data-seg="major" class="${seg==='major'?'on':''}">5 · 문창과 전공</button></div>
+  ${seg==='basic'?`<p class="muted small" style="margin:8px 0">글쓰기를 처음 배우는 사람을 위한 핵심 배움이에요. 순서대로 하나씩 해 보세요.</p>${trackHTML(BASICS)}`:
+  `<p class="muted small" style="margin:8px 0">대학 문예창작과에서 실제로 배우는 전공 과목들이에요. 과목마다 무엇을 배우는지 읽고, 과제를 쓰고, 작가 피드백을 받아 보세요.</p>${COURSES.map(trackHTML).join('')}`}`;
+}
+function bindLearn(v){
+  v.querySelectorAll('[data-seg]').forEach(b=>b.onclick=()=>{ S.seg.learn=b.dataset.seg; render(); });
+  v.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>{ S.sub=b.dataset.lesson; render(); });
+}
+function lessonHTML(id){
+  const l=LESSON_MAP[id]; const done=!!S.profile.lessonsDone[id];
+  const linked=Object.values(S.writings).filter(w=>w.lessonId===id).sort((a,b)=>b.updatedAt-a.updatedAt);
+  return `<div class="lesson"><button class="back" data-back>‹ ${esc(l.track.name)}</button>
+  <div class="small muted">${esc(l.track.name)} · ${l.idx+1}강</div><h1>${esc(l.title)}</h1>
+  <div class="card"><p>${esc(l.concept)}</p><ul>${l.points.map(p=>`<li>${esc(p)}</li>`).join('')}</ul></div>
+  ${l.before||l.after?`<div class="ex">${l.before?`<div class="b"><small>이렇게 쓰기 쉬워요</small>${esc(l.before)}</div>`:''}${l.after?`<div class="a"><small>이렇게 바꿔 볼 수 있어요</small>${esc(l.after)}</div>`:''}</div>`:''}
+  <h2>과제</h2><div class="task">${esc(l.task)}</div>
+  <p class="small muted">권장 분량: 공백 제외 ${l.min}자 이상 · 채우면 자동으로 완료돼요.</p>
+  <button class="btn primary block" data-startl>과제 쓰기 시작</button>
+  ${linked.length?`<h2>이 레슨에서 쓴 글</h2>${linked.map(writingRow).join('')}`:''}
+  <button class="btn ghost block" data-done style="margin-top:12px">${done?'완료 표시 취소':'이 레슨 완료로 표시'}</button></div>`;
+}
+function bindLesson(v){
+  const id=S.sub, l=LESSON_MAP[id];
+  bindBack(v); bindOpenRows(v);
+  $('[data-startl]',v).onclick=()=>newWriting({genre:l.track.genre, lessonId:id, title:l.title});
+  $('[data-done]',v).onclick=()=>{ if(S.profile.lessonsDone[id]) delete S.profile.lessonsDone[id]; else S.profile.lessonsDone[id]=Date.now(); Store.saveProfile(); render(); };
+}
+
+/* ============ 쓰기 (2 협동 · 3 장르 · 7 피드백) ============ */
+function writingRow(w){
+  return `<button class="list-item" data-open="${esc(w.id)}"><div class="grow"><div class="title">${esc(w.title||'제목 없음')}</div>
+    <div class="sub"><span class="tag ${esc(w.genre)}">${esc(GENRES[w.genre]?.name||'자유')}</span> ${fmtDate(w.updatedAt)} · ${charsNoSp(w.body)}자${(w.feedbacks||[]).length?` · 피드백 ${w.feedbacks.length}`:''}</div></div><span class="muted">›</span></button>`;
+}
+function bindOpenRows(v){ v.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>go('write',b.dataset.open)); }
+function writeListHTML(){
+  const ws=Object.values(S.writings).sort((a,b)=>b.updatedAt-a.updatedAt);
+  const seg=`<div class="seg"><button data-wseg="mine" class="${S.seg.write==='mine'?'on':''}">나의 글</button><button data-wseg="proj" class="${S.seg.write==='proj'?'on':''}">투고작 프로젝트</button></div>`;
+  if(S.seg.write==='proj') return seg+projListHTML();
+  return `${seg}<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><h2 style="margin:0">나의 글</h2><button class="btn primary" data-new>+ 새 글</button></div>
+  <p class="muted small" style="margin:6px 0">장르를 고르면 그 장르에 맞는 쓰기 도구가 열려요. 쓰는 동안 AI 동료와 주고받거나(협동 글쓰기), 다 쓰고 작가 피드백을 받을 수 있어요.</p>
+  ${ws.length?ws.map(writingRow).join(''):`<div class="empty"><div class="big">아직 쓴 글이 없어요</div>"+ 새 글"이나 기초 레슨으로 시작해 보세요.</div>`}`;
+}
+function bindWriteList(v){
+  v.querySelectorAll('[data-wseg]').forEach(b=>b.onclick=()=>{ S.seg.write=b.dataset.wseg; render(); });
+  bindOpenRows(v); const n=$('[data-new]',v); if(n) n.onclick=pickGenreThenNew;
+  const np=$('[data-newp]',v); if(np) np.onclick=newProjectSheet;
+  v.querySelectorAll('[data-proj]').forEach(b=>b.onclick=()=>{ S.sub='p:'+b.dataset.proj; render(); });
+}
+function pickGenreThenNew(){
+  sheet(`<h3>어떤 장르로 쓸까요?</h3><p class="small muted">장르마다 쓰기 도구가 달라요.</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+    ${Object.entries(GENRES).map(([k,g])=>`<button class="btn block" data-g="${k}">${esc(g.name)}</button>`).join('')}</div>`,
+  (el,close)=>el.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{ close(); newWriting({genre:b.dataset.g}); }));
+}
+function newWriting(o){
+  const w={id:uid(), genre:o.genre||'free', title:o.title||'', body:'', prompt:o.prompt||'', lessonId:o.lessonId||'', problemId:o.problemId||'', ref:o.ref||null,
+    projectId:o.projectId||'', timerMin:o.timerMin||0, meta:{}, versions:[], collab:[], feedbacks:[], createdAt:Date.now(), updatedAt:Date.now()};
+  S.writings[w.id]=w; Store.save('writings',w);
+  if(w.timerMin){ S.examEnd=Date.now()+w.timerMin*60e3; S.examFor=w.id; }
+  go('write',w.id);
+}
+
+/* ---- 3. 장르별 도구 ---- */
+const ABSTRACT=['사랑','슬픔','슬프','행복','외로움','외롭','희망','그리움','그립','아픔','기쁨','고독','추억','영원','절망','설렘','쓸쓸','눈물','마음'];
+function genreToolsHTML(w){
+  const m=w.meta||{}; const f=(k,label,ph,ta)=>`<label><span>${label}</span>${ta?`<textarea data-meta="${k}" placeholder="${esc(ph)}">${esc(m[k]||'')}</textarea>`:`<input data-meta="${k}" placeholder="${esc(ph)}" value="${esc(m[k]||'')}">`}</label>`;
+  if(w.genre==='poem') return `<div class="tools"><b>시 쓰기 도구</b><div data-live></div></div>`;
+  if(w.genre==='novel') return `<div class="tools"><b>인물 카드 · 장면 설계</b><div class="row2">${f('cname','인물 이름','')}${f('cwant','원하는 것','구체적으로')}</div><div class="row2">${f('cblock','가로막는 것','사람·상황·두려움')}${f('csecret','숨기는 것','')}</div>${f('scene','이 장면의 목표와 끝날 때의 변화','예: 돈을 빌리려 함 → 거절당하고 관계가 달라짐')}<div data-live class="small muted"></div></div>`;
+  if(w.genre==='essay') return `<div class="tools"><b>수필 구성 메모</b>${f('open','시작 장면 (무엇으로 열까)','사물이나 장면 하나')}${f('turn','전환 (생각이 꺾이는 지점)','')}${f('end','여운 (말하지 않고 남길 것)','')}<div data-live class="small muted"></div></div>`;
+  if(w.genre==='script') return `<div class="tools"><b>시나리오·희곡 서식</b><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" data-ins="scene">+ 장면(S#)</button><button class="btn sm" data-ins="action">+ 지문</button><button class="btn sm" data-ins="line">+ 대사</button></div><div data-live class="small muted" style="margin-top:6px"></div></div>`;
+  if(w.genre==='argument') return `<div class="tools"><b>논술 설계</b>${f('conds','문제의 조건 (한 줄에 하나)','예: 600자 내외\n제시문 (가)(나) 활용\n반론 포함',true)}<div class="row2">${f('intro','서론: 내 주장 한 문장','')}${f('target','목표 분량(자)','1000')}</div>${f('bodyplan','본론: 근거와 예시','근거1 / 근거2 / 반론과 재반박',true)}<div data-live></div></div>`;
+  return '';
+}
+function genreLive(v,w){
+  const el=$('[data-live]',v); if(!el) return; const b=w.body||'';
+  if(w.genre==='poem'){
+    const lines=b.split('\n').filter(x=>x.trim()).length, st=b.split(/\n\s*\n/).filter(x=>x.trim()).length;
+    const found=ABSTRACT.map(a=>[a,(b.match(new RegExp(a,'g'))||[]).length]).filter(x=>x[1]);
+    el.innerHTML=`<div class="small">${lines}행 · ${st}연</div><div class="small" style="margin-top:4px">관념어 점검: ${found.length?found.map(x=>`<span class="hl">${esc(x[0])} ${x[1]}</span>`).join('')+' <span class="muted">→ 이미지로 바꿀 수 있을까요?</span>':'<span class="muted">감정을 직접 말하는 단어가 없어요 👍</span>'}</div>`;
+  } else if(w.genre==='novel'){
+    const dl=b.split('\n').filter(x=>/^\s*["“]/.test(x)).join('').length; el.textContent=`대사 비율 ${b.length?Math.round(dl/b.length*100):0}% · 문단 ${b.split(/\n+/).filter(x=>x.trim()).length}개`;
+  } else if(w.genre==='essay'){
+    const sents=b.split(/[.!?。]\s*/).filter(x=>x.trim()); const avg=sents.length?Math.round(charsNoSp(b)/sents.length):0;
+    el.textContent=`문장 ${sents.length}개 · 평균 ${avg}자 ${avg>45?'(긴 문장이 많아요. 나눠 볼까요?)':''}`;
+  } else if(w.genre==='script'){
+    el.textContent=`장면 ${(b.match(/^S#/gm)||[]).length}개 · 대사 ${(b.match(/^[^\n:]{1,10}:/gm)||[]).length}줄`;
+  } else if(w.genre==='argument'){
+    const tgt=+(w.meta?.target)||(w.problemId?PROBLEM_MAP[w.problemId].target:1000); const n=charsNoSp(b); const pct=Math.min(100,Math.round(n/tgt*100));
+    const conds=(w.meta?.conds||'').split('\n').map(x=>x.trim()).filter(Boolean); const chk=w.meta?.chk||{};
+    el.innerHTML=`<div class="small" style="margin-top:6px">분량 ${n} / ${tgt}자 (${pct}%) ${n>tgt*1.1?'<span style="color:var(--red)">· 10% 넘게 초과</span>':''}</div><div class="prog"><i style="width:${pct}%"></i></div>
+    ${conds.length?`<div class="small" style="margin-top:8px">조건 확인</div>${conds.map((c,i)=>`<label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" data-chk="${i}" ${chk[i]?'checked':''} style="width:auto"> <span style="font-size:14px;color:var(--ink)">${esc(c)}</span></label>`).join('')}`:''}`;
+    el.querySelectorAll('[data-chk]').forEach(c=>c.onchange=()=>{ w.meta.chk={...(w.meta.chk||{}),[c.dataset.chk]:c.checked}; S.metaDirty=true; S.sched&&S.sched(); });
+  }
+}
+
+function editorHTML(w){
+  const L=w.lessonId&&LESSON_MAP[w.lessonId], P=w.problemId&&PROBLEM_MAP[w.problemId];
+  return `<div class="ed-top"><button class="back" data-back>‹ 나의 글</button>
+    <div style="display:flex;gap:6px"><button class="btn sm" data-versions>퇴고 ${(w.versions||[]).length}</button><button class="btn sm" data-del>삭제</button></div></div>
+  <div class="genre-pick">${Object.entries(GENRES).map(([k,g])=>`<button class="chip ${w.genre===k?'on':''}" data-genre="${k}">${esc(g.name)}</button>`).join('')}</div>
+  ${L?`<div class="ref"><b>레슨 과제</b> · ${esc(L.title)}<div class="small" style="margin-top:4px">${esc(L.task)}</div></div>`:''}
+  ${P?`<div class="ref"><b>${esc(P.type)} · ${esc(P.title)}</b><div class="passage" style="background:#fffaf0">${esc(P.passage)}</div><div><b>문제</b> ${esc(P.question)}</div></div>`:''}
+  ${w.prompt?`<div class="ref"><b>글감</b><div style="margin-top:3px">${esc(w.prompt)}</div></div>`:''}
+  ${w.ref?`<div class="ref"><b>수집한 문구</b>${w.ref.source?` · <span class="small">${esc(w.ref.source)}</span>`:''}<div class="q" style="margin-top:4px">${esc(w.ref.text)}</div></div>`:''}
+  ${genreToolsHTML(w)}
+  <div class="card tight" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span class="small">🗂️ ${w.projectId&&S.projects[w.projectId]?`투고작: <b>${esc(S.projects[w.projectId].title)}</b>${w.kind==='draft'?' · 초고':''}`:'투고작에 넣지 않음'}</span>
+    <span style="display:flex;gap:6px">${w.genre==='poem'&&w.projectId?`<button class="btn sm ${w.final?'dark':''}" data-final>${w.final?'✓ 완성작':'완성작으로 표시'}</button>`:''}${w.kind==='draft'?'':`<button class="btn sm" data-toproj>${w.projectId?'바꾸기':'투고작에 넣기'}</button>`}</span></div>
+  ${w.genre==='argument'||w.timerMin?`<div class="card tight" style="display:flex;justify-content:space-between;align-items:center"><span class="small">⏱ ${w.genre==='argument'?'실전':'집중'} 타이머 <span class="timer" data-timer></span></span><button class="btn sm" data-timerbtn></button></div>`:''}
+  <input class="title-in" data-title placeholder="제목" value="${esc(w.title)}">
+  <textarea class="body-in" data-body placeholder="여기에 당신의 문장을 쓰세요.">${esc(w.body)}</textarea>
+  <div class="ed-meta"><span data-count></span><span data-saved>저장됨</span></div>
+  <div class="ed-actions">
+    <button class="btn full" data-collab>🤝 AI 동료에게 넘기기 (협동 글쓰기)</button>
+    <button class="btn" data-stuck>막혔어요</button>
+    <button class="btn" data-revise>퇴고본 저장</button>
+    <button class="btn primary full block" data-review>작가 피드백 받기</button>
+  </div>
+  <div data-area></div>
+  ${(w.collab||[]).length?`<h2>협동 기록</h2><p class="small muted" style="margin:-4px 0 6px">내가 쓰고 → AI 동료가 묻고 → 내가 이어 쓰는 흐름이에요.</p><div class="collab">${w.collab.map(collabTurnHTML).join('')}</div>`:''}
+  ${(w.feedbacks||[]).length?`<h2>작가 피드백</h2>`:''}
+  <div data-fblist>${(w.feedbacks||[]).slice().reverse().map((f,i)=>feedbackHTML(f,i===0)).join('')}</div>`;
+}
+function collabTurnHTML(t){
+  if(t.role==='me') return `<div class="turn me"><div class="av">나</div><div class="bub"><div class="kind" style="color:var(--red)">내가 쓴 부분 · ${t.chars}자까지</div><div class="small" style="font-family:var(--serif)">${esc(t.excerpt)}</div></div></div>`;
+  return `<div class="turn"><div class="av">🤝</div><div class="bub"><div class="kind">${esc(t.kind||'AI 동료')}</div>${t.focus?`<div class="quote" data-find="${esc(t.focus)}">“${esc(t.focus)}”</div>`:''}<div>${esc(t.text)}</div>${t.next?`<div class="small" style="color:var(--red);margin-top:4px">→ ${esc(t.next)}</div>`:''}</div></div>`;
+}
+function feedbackHTML(f,open){
+  const P=PERSONAS[f.persona]||{icon:'💬',name:'AI'}, d=f.data||{};
+  const quote=q=>q?`<div class="quote" data-find="${esc(q)}">“${esc(q)}”</div>`:'';
+  return `<div class="fb"><button class="fb-head" data-toggle><span><b>${P.icon} ${esc(P.name)}</b> <span class="small muted">· ${fmtTime(f.at)} · ${f.chars}자 시점</span></span><span class="muted">${open?'▾':'▸'}</span></button>
+  <div class="fb-body" ${open?'':'hidden'}>
+    ${d.summary?`<p style="font-family:var(--serif);font-size:16px;margin:10px 0 0">${esc(d.summary)}</p>`:''}
+    ${(d.strengths||[]).length?`<div class="fb-sec good"><b>잘된 점</b>${d.strengths.map(s=>`<div class="fb-item">${quote(s.quote)}<div>${esc(s.why)}</div></div>`).join('')}</div>`:''}
+    ${(d.questions||[]).length?`<div class="fb-sec q"><b>작가에게 묻는 질문</b><ol style="padding-left:20px;margin:0">${d.questions.map(q=>`<li style="margin:5px 0">${esc(q)}</li>`).join('')}</ol></div>`:''}
+    ${(d.improvements||[]).length?`<div class="fb-sec fix"><b>다듬어 볼 곳</b>${d.improvements.map(s=>`<div class="fb-item">${quote(s.quote)}<div>${esc(s.issue)}</div>${s.direction?`<div class="small" style="color:var(--red);margin-top:2px">→ ${esc(s.direction)}</div>`:''}</div>`).join('')}</div>`:''}
+    ${(d.rubric||[]).length?`<div class="fb-sec"><b>채점 기준표</b><table class="rub">${d.rubric.map(r=>`<tr><td><b>${esc(r.item)}</b><div class="small muted">${esc(r.comment||'')}</div></td><td class="s">${esc(r.score)}/${esc(r.max||10)}</td></tr>`).join('')}</table><div class="small muted" style="margin-top:6px">연습용 추정 점수예요.</div></div>`:''}
+    ${d.growth?`<div class="fb-sec q"><b>지난 피드백 이후 발전한 점</b><div>${esc(d.growth)}</div></div>`:''}
+    ${d.mission?`<div class="mission"><b>다음 퇴고 미션</b>${esc(d.mission)}</div>`:''}
+  </div></div>`;
+}
+function bindEditor(v,w){
+  w.meta=w.meta||{};
+  const title=$('[data-title]',v), body=$('[data-body]',v), count=$('[data-count]',v), saved=$('[data-saved]',v);
+  let t=null;
+  const upd=()=>{ count.textContent=`${chars(body.value)}자 · 공백 제외 ${charsNoSp(body.value)}자`; };
+  const autosize=()=>{ body.style.height='auto'; body.style.height=Math.max(body.scrollHeight, window.innerHeight*0.42)+'px'; };
+  const commit=()=>{ clearTimeout(t); t=null;
+    if(w.title===title.value && (w._savedBody===undefined||w._savedBody===body.value) && !S.metaDirty){ w._savedBody=undefined; return Promise.resolve(); }
+    logChars(charsNoSp(body.value)-charsNoSp(w._savedBody??w.body)); w._savedBody=undefined;
+    S.metaDirty=false; w.title=title.value; w.body=body.value; w.updatedAt=Date.now(); markDay(); autoComplete(w);
+    saved.textContent='저장 중…';
+    return Store.save('writings',w).then(()=>saved.textContent='저장됨').catch(()=>saved.textContent='저장 실패');
+  };
+  const sched=()=>{ saved.textContent='입력 중…'; clearTimeout(t); t=setTimeout(commit,1200); };
+  S.editorCommit=commit; S.sched=sched;
+  title.oninput=sched;
+  if(w._savedBody===undefined) w._savedBody=w.body;
+  body.oninput=()=>{ upd(); autosize(); if(w._savedBody===undefined) w._savedBody=w.body; w.body=body.value; genreLive(v,w); sched(); };
+  v.querySelectorAll('[data-meta]').forEach(i=>i.oninput=()=>{ w.meta[i.dataset.meta]=i.value; S.metaDirty=true; if(['conds','target'].includes(i.dataset.meta)) genreLive(v,w); sched(); });
+  v.querySelectorAll('[data-ins]').forEach(b=>b.onclick=()=>{
+    const n=(body.value.match(/^S#/gm)||[]).length+1;
+    const txt={scene:`S#${n}. 장소 - 시간\n`, action:'(지문) ', line:'인물: '}[b.dataset.ins];
+    const s=body.selectionStart??body.value.length; const pre=body.value.slice(0,s); const lead=pre&&!pre.endsWith('\n')?'\n':'';
+    body.value=pre+lead+txt+body.value.slice(s); const pos=(pre+lead+txt).length; body.focus(); body.setSelectionRange(pos,pos); body.oninput();
+  });
+  upd(); genreLive(v,w); setTimeout(autosize,0);
+  $('[data-back]',v).onclick=()=>{ commit(); S.sub=null; render(); };
+  v.querySelectorAll('[data-genre]').forEach(b=>b.onclick=()=>{ commit(); w.genre=b.dataset.genre; w.updatedAt=Date.now(); Store.save('writings',w); render(); });
+  $('[data-del]',v).onclick=()=>confirmSheet('이 글을 삭제할까요? 되돌릴 수 없어요.','삭제',()=>{ clearTimeout(t); delete S.writings[w.id]; Store.del('writings',w.id); S.sub=null; render(); toast('삭제했어요'); });
+  $('[data-revise]',v).onclick=()=>{ commit(); if(!body.value.trim()) return toast('먼저 글을 써 주세요');
+    const last=(w.versions||[]).slice(-1)[0]; if(last&&last.body===body.value) return toast('지난 퇴고본과 같아요');
+    (w.versions||(w.versions=[])).push({at:Date.now(), body:body.value}); if(w.versions.length>15) w.versions.shift();
+    Store.save('writings',w); toast(`퇴고본 ${w.versions.length}번째를 저장했어요`); $('[data-versions]',v).textContent=`퇴고 ${w.versions.length}`; };
+  $('[data-versions]',v).onclick=()=>showVersions(w);
+  $('[data-review]',v).onclick=()=>{ commit(); pickPersona(w,v); };
+  $('[data-collab]',v).onclick=()=>{ commit(); collabTurn(w,v); };
+  $('[data-stuck]',v).onclick=()=>{ commit(); stuckHelp(w); };
+  const fz=$('[data-final]',v); if(fz) fz.onclick=()=>{ commit(); w.final=!w.final; Store.save('writings',w); render(); toast(w.final?'투고 묶음의 완성작으로 표시했어요':'완성 표시를 뺐어요'); };
+  const tp=$('[data-toproj]',v); if(tp) tp.onclick=()=>{ commit(); const ps=Object.values(S.projects).filter(p=>p.stage!=='ready');
+    sheet(`<h3>어느 투고작에 넣을까요?</h3>${ps.map(p=>`<button class="opt" data-pp="${esc(p.id)}"><div class="ic">🗂️</div><div><b>${esc(p.title)}</b><span>${esc(GENRES[p.genre].name)}</span></div></button>`).join('')||'<p class="small muted">아직 투고작 프로젝트가 없어요.</p>'}
+      ${w.projectId?'<button class="btn block" data-pp="">투고작에서 빼기</button>':''}<button class="btn primary block" data-newpp style="margin-top:8px">+ 새 투고작 만들기</button>`,
+    (el,close)=>{ el.querySelectorAll('[data-pp]').forEach(b=>b.onclick=()=>{ w.projectId=b.dataset.pp; if(w.projectId) w.genre=S.projects[w.projectId].genre; Store.save('writings',w); close(); render(); toast(w.projectId?'투고작에 넣었어요':'투고작에서 뺐어요'); });
+      $('[data-newpp]',el).onclick=()=>{ close(); newProjectSheet(); }; }); };
+  v.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{ const bd=b.nextElementSibling; bd.hidden=!bd.hidden; b.lastElementChild.textContent=bd.hidden?'▸':'▾'; });
+  v.querySelectorAll('[data-find]').forEach(q=>q.onclick=()=>{ const s=q.dataset.find, i=body.value.indexOf(s);
+    if(i<0) return toast('본문에서 그 구절을 찾지 못했어요(이미 고쳤을지도요)');
+    body.focus(); body.setSelectionRange(i,i+s.length); body.scrollIntoView({block:'center'}); });
+  const tb=$('[data-timerbtn]',v);
+  if(tb){
+    const mins=w.timerMin||(w.problemId?PROBLEM_MAP[w.problemId].min:40);
+    const tick=()=>{ const el=$('[data-timer]',v); if(!el) return; const on=S.examEnd&&S.examFor===w.id; const left=on?Math.max(0,S.examEnd-Date.now()):mins*60e3;
+      el.textContent=`${String(Math.floor(left/60e3)).padStart(2,'0')}:${String(Math.floor(left%60e3/1e3)).padStart(2,'0')}`; tb.textContent=on?'멈춤':`${mins}분 시작`;
+      if(on&&left<=0){ S.examEnd=null; toast('⏱ 시간 종료! 조건을 다시 확인해 보세요.',4000); tick(); } };
+    tick(); S.timers.exam=setInterval(tick,1000);
+    tb.onclick=()=>{ if(S.examEnd&&S.examFor===w.id) S.examEnd=null; else { S.examEnd=Date.now()+mins*60e3; S.examFor=w.id; } tick(); };
+  }
+}
+function autoComplete(w){
+  if(!w.lessonId||S.profile.lessonsDone[w.lessonId]) return;
+  const L=LESSON_MAP[w.lessonId]; if(L&&charsNoSp(w.body)>=L.min){ S.profile.lessonsDone[w.lessonId]=Date.now(); Store.saveProfile(); toast(`「${L.title}」 완료!`); }
+}
+function showVersions(w){
+  const vs=(w.versions||[]).slice().reverse();
+  sheet(`<h3>퇴고 기록</h3><p class="small muted">"퇴고본 저장"을 누를 때마다 그 순간의 원고가 남아요.</p>
+  ${vs.length?vs.map((x,i)=>`<div class="version"><div style="display:flex;justify-content:space-between;align-items:center"><b class="small">${vs.length-i}번째 · ${fmtTime(x.at)} · ${charsNoSp(x.body)}자</b><button class="btn sm" data-restore="${vs.length-1-i}">되돌리기</button></div><pre>${esc(x.body)}</pre></div>`).join(''):'<div class="empty">아직 저장한 퇴고본이 없어요.</div>'}`,
+  (el,close)=>el.querySelectorAll('[data-restore]').forEach(b=>b.onclick=()=>{ const x=w.versions[+b.dataset.restore];
+    confirmSheet('현재 원고를 이 버전으로 바꿀까요? (지금 원고는 퇴고본으로 먼저 저장돼요)','되돌리기',()=>{
+      if(w.body.trim()&&(w.versions.slice(-1)[0]||{}).body!==w.body) w.versions.push({at:Date.now(),body:w.body});
+      w.body=x.body; w.updatedAt=Date.now(); Store.save('writings',w); close(); render(); toast('되돌렸어요'); }); }));
+}
+function contextOf(w){
+  const L=w.lessonId&&LESSON_MAP[w.lessonId], P=w.problemId&&PROBLEM_MAP[w.problemId], m=w.meta||{};
+  let s='';
+  if(L) s+=`\n[레슨 과제: ${L.title}] ${L.task}\n핵심 개념: ${L.concept}`;
+  if(P) s+=`\n[${P.type} 문항] 제시문: ${P.passage}\n문제: ${P.question}`;
+  if(w.prompt) s+=`\n[글감] ${w.prompt}`;
+  if(w.ref) s+=`\n[작가가 책에서 수집한 문구] ${w.ref.text}`;
+  const notes=Object.entries(m).filter(([k,v])=>typeof v==='string'&&v.trim()).map(([k,v])=>`${k}: ${v}`).join(' / ');
+  if(notes) s+=`\n[작가의 설계 메모] ${notes}`;
+  return s;
+}
+
+/* ---- 2. 협동 글쓰기 ---- */
+async function collabTurn(w,v){
+  if(S.busy) return; if(charsNoSp(w.body)<10) return toast('먼저 몇 문장 써 주세요. 그다음 AI 동료가 이어받아요.');
+  const lastMe=[...(w.collab||[])].reverse().find(t=>t.role==='me');
+  if(lastMe && lastMe.chars===charsNoSp(w.body)) return toast('AI 동료의 질문을 보고 조금 더 써 본 뒤 다시 넘겨 주세요');
+  S.busy=true; const area=$('[data-area]',v); area.innerHTML=loadingHTML('AI 동료가 읽는 중…'); area.scrollIntoView({block:'center'});
+  const newPart = lastMe ? w.body.slice(lastMe.len||0) : w.body;
+  const history=(w.collab||[]).filter(t=>t.role==='ai').slice(-4).map(t=>`- (${t.kind}) ${t.text}`).join('\n');
+  const prompt=`당신은 ${GENRES[w.genre]?.name} 글을 함께 쓰는 "협동 글쓰기 동료"입니다. 작가와 번갈아 턴을 주고받습니다. 작가가 한 턴을 쓰고 넘기면, 당신은 문장을 쓰는 대신 작가가 다음 턴을 스스로 쓰도록 돕는 한 가지를 건넵니다.
+${NO_GHOSTWRITE}
+- 이번 턴에서 할 것은 셋 중 하나만 고르세요: "질문"(다음 내용을 떠올리게 하는 질문), "방향"(이야기·논리를 어디로 끌고 갈지 선택지 2개 제시), "독자 반응"(지금까지 읽은 독자가 느낀 것과 궁금한 것).
+- 작가의 문체(문장 길이, 어휘, 리듬)를 관찰하고, 그 문체를 지키는 쪽으로 도우세요. 문체를 바꾸라고 하지 마세요.${styleContext()}
+${contextOf(w)}
+${history?`[이전 턴에서 당신이 건넨 것]\n${history}`:''}
+[작가가 지금까지 쓴 전체 글]
+"""
+${w.body.slice(-5000)}
+"""
+[이번 턴에 새로 쓴 부분]
+"""
+${newPart.slice(-2000)}
+"""
+JSON으로만 답하세요: {"kind":"질문|방향|독자 반응","focus":"새로 쓴 부분에서 주목한 원문 구절(30자 이내, 없으면 빈 문자열)","text":"작가에게 건넬 말 2~3문장","next":"다음 턴에 작가가 써 볼 것 한 줄(문장 예시 금지)"}`;
+  try{
+    const d=await askAI(prompt,{tier:'quick'});
+    const ex=newPart.trim(); (w.collab||(w.collab=[])).push({role:'me', at:Date.now(), chars:charsNoSp(w.body), len:w.body.length, excerpt: ex.length>80? '… '+ex.slice(-80):ex});
+    w.collab.push({role:'ai', at:Date.now(), kind:d.kind, focus:d.focus, text:d.text, next:d.next});
+    if(w.collab.length>40) w.collab.splice(0,2);
+    w.updatedAt=Date.now(); await Store.save('writings',w).catch(()=>{}); S.busy=false; render();
+    setTimeout(()=>{ const ts=document.querySelectorAll('.collab .turn'); ts.length&&ts[ts.length-1].scrollIntoView({block:'center',behavior:'smooth'}); },50);
+  }catch(e){ S.busy=false; area.innerHTML=`${aiNoteHTML(e)}`; }
+}
+
+async function stuckHelp(w){
+  let c; const close=sheet(`<h3>막혔을 때</h3><div data-c>${loadingHTML('지금까지 쓴 글을 읽는 중…')}</div>`, el=>{c=$('[data-c]',el);});
+  const prompt=`당신은 글쓰기 코치입니다. 작가가 글을 쓰다 막혔습니다. 대신 써 주지 말고, 작가가 스스로 다음 문장을 찾도록 돕는 질문을 하세요.
+${NO_GHOSTWRITE}${styleContext()}
+[장르] ${GENRES[w.genre]?.name}${contextOf(w)}
+[지금까지 쓴 글]
+"""
+${(w.body||'(아직 비어 있음)').slice(-4000)}
+"""
+JSON으로만 답하세요: {"diagnosis":"지금 왜 막혔을 것 같은지 한 문장","questions":["작가가 답하면서 다음 내용을 찾게 되는 구체적인 질문 3개"],"sense":"오감 중 하나를 깨우는 관찰 질문 1개","tinyStep":"지금 5분 안에 할 수 있는 아주 작은 행동 1개(문장을 대신 써 주는 것 금지)"}`;
+  try{ const d=await askAI(prompt,{tier:'quick'}); if(!c.isConnected) return;
+    c.innerHTML=`<p class="small muted">${esc(d.diagnosis||'')}</p><div class="fb-sec q"><b>스스로에게 물어보세요</b><ol style="padding-left:20px;margin:0">${(d.questions||[]).map(q=>`<li style="margin:6px 0">${esc(q)}</li>`).join('')}</ol></div>
+      ${d.sense?`<div class="fb-sec good"><b>감각 깨우기</b><div>${esc(d.sense)}</div></div>`:''}${d.tinyStep?`<div class="mission"><b>지금 5분</b>${esc(d.tinyStep)}</div>`:''}
+      <button class="btn block" style="margin-top:14px" data-x>다시 쓰러 가기</button>`;
+    $('[data-x]',c).onclick=close;
+  }catch(e){ if(c.isConnected) c.innerHTML=`${aiNoteHTML(e)}`; }
+}
+/* ---- 7. 작가 피드백 ---- */
+function pickPersona(w,v){
+  if(charsNoSp(w.body)<20) return toast('피드백을 받으려면 조금 더 써 주세요 (20자 이상)');
+  const order=PERSONA_ORDER[w.genre]||PERSONA_ORDER.free;
+  sheet(`<h3>어떤 작가에게 피드백을 받을까요?</h3><p class="small muted">작가마다 보는 곳이 달라요.</p>
+    ${order.map(k=>{const P=PERSONAS[k];return `<button class="opt" data-p="${k}"><div class="ic">${P.icon}</div><div><b>${esc(P.name)}</b><span>${esc(P.desc)}</span></div></button>`;}).join('')}`,
+  (el,close)=>el.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{ close(); runFeedback(w,b.dataset.p,v); }));
+}
+async function runFeedback(w,key,v){
+  if(S.busy) return; S.busy=true;
+  const P=PERSONAS[key]; const area=$('[data-area]',v);
+  const msgs=['원고를 읽는 중…','밑줄을 긋는 중…','질문을 고르는 중…','피드백을 정리하는 중…']; let mi=0;
+  area.innerHTML=loadingHTML(msgs[0]); area.scrollIntoView({block:'center'});
+  const int=setInterval(()=>{ const d=$('.loading div:last-child',area); if(d) d.textContent=msgs[++mi%msgs.length]; },2500);
+  const prev=(w.feedbacks||[]).slice(-1)[0];
+  const items=P.rubricItems||(P.rubric?['논제 이해와 조건 충족','논리 구조','근거와 예시의 타당성','표현과 분량']:null);
+  const rub=items?`,"rubric":[${items.map(x=>`{"item":"${x}","score":0,"max":10,"comment":""}`).join(',')}]`:'';
+  const prompt=`당신은 ${P.role}입니다. ${P.focus}
+아래는 글쓰기를 배우는 사람이 직접 쓴 ${GENRES[w.genre]?.name} 글입니다. 당신의 전문 작가로서의 역량과 눈으로 피드백해, 이 사람이 한 단계 발전하도록 도와주세요.
+${NO_GHOSTWRITE}
+- 작가 고유의 문체는 지키는 방향으로 조언하세요.${styleContext()}${contextOf(w)}
+${prev?`[지난 피드백의 퇴고 미션] ${prev.data?.mission||''}\n그 미션을 얼마나 해냈는지, 지난 피드백 이후 무엇이 발전했는지 growth에 적어 주세요.`:'growth는 빈 문자열로 두세요.'}
+
+[제목] ${w.title||'(없음)'}
+[본문]
+"""
+${w.body.slice(0,7000)}
+"""
+JSON으로만 답하세요: {"summary":"한두 문장 총평","strengths":[{"quote":"원문 구절","why":"왜 좋은지"}],"questions":["작가 스스로 생각해 보게 하는 질문 3개"],"improvements":[{"quote":"원문 구절","issue":"무엇이 아쉬운지","direction":"어떤 방향으로 시도해 볼지(예시 문장 금지)"}],"growth":"","mission":"다음 퇴고에서 할 구체적인 미션 한 가지"${rub}}
+strengths 2~3개, improvements 2~4개.`;
+  try{
+    const data=await askAI(prompt);
+    (w.feedbacks||(w.feedbacks=[])).push({persona:key, at:Date.now(), chars:charsNoSp(w.body), data}); if(w.feedbacks.length>12) w.feedbacks.shift();
+    w.updatedAt=Date.now(); await Store.save('writings',w).catch(()=>{}); markDay(); clearInterval(int); S.busy=false; render();
+    setTimeout(()=>{ const fb=$('[data-fblist] .fb'); fb&&fb.scrollIntoView({block:'start',behavior:'smooth'}); },50);
+  }catch(e){ clearInterval(int); S.busy=false; area.innerHTML=`${aiNoteHTML(e)}`; }
+}
+
+/* ============ 영감 (6 소재·영감 / 8 책 문구) ============ */
+function inspHTML_v1(){
+  const seg=S.seg.insp;
+  const head=`<div class="seg"><button data-seg="idea" class="${seg==='idea'?'on':''}">6 · 소재·영감</button><button data-seg="quote" class="${seg==='quote'?'on':''}">8 · 책 문구 수집</button></div>`;
+  if(seg==='idea'){
+    const ids=Object.values(S.ideas).sort((a,b)=>b.at-a.at);
+    return `${head}<p class="muted small" style="margin:8px 0">떠오른 소재, 장면, 단어, 들은 말을 적어 두세요. AI가 질문을 던지면, 답하면서 소재를 내 글감으로 키워 가요.</p>
+    <div class="card"><label class="field"><span>소재·영감 메모</span><textarea data-itext placeholder="예: 지하철에서 혼자 울던 할아버지 / '괜찮아'라는 말이 제일 싫었던 날"></textarea></label><button class="btn primary block" data-iadd>소재 담기</button></div>
+    ${ids.length?ids.map(i=>`<button class="list-item" data-idea="${esc(i.id)}"><div class="grow"><div class="title">${esc(i.text)}</div><div class="sub">${fmtDate(i.at)}${i.dev?' · 발전 중':' · 아직 발전 전'}${i.writingId?' · 글로 씀':''}</div></div><span class="muted">›</span></button>`).join(''):`<div class="empty"><div class="big">아직 담은 소재가 없어요</div>오늘 스친 장면 하나를 적어 보세요.</div>`}`;
+  }
+  const qs=Object.values(S.quotes).sort((a,b)=>b.at-a.at);
+  return `${head}<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><p class="muted small" style="margin:8px 0">책에서 마음에 남은 문구를 사진이나 직접 작성으로 모으고, 소재로 발전시키거나 필사·변주하거나 여러 문구를 엮어 글감으로 만들어요.</p>${qs.length?`<button class="btn sm ${S.selectMode?'dark':''}" data-sel style="flex:0 0 auto">${S.selectMode?'선택 끝':'글감 엮기'}</button>`:''}</div>
+  ${S.selectMode?`<div class="note">엮을 문구를 1~5개 골라 주세요. (${S.selected.size}개 선택됨)</div>`:''}
+  <div class="card"><div style="display:flex;gap:8px"><button class="btn block" data-addtext>직접 작성</button><button class="btn block" data-addphoto>사진으로</button></div><input type="file" accept="image/*" data-file hidden><div data-form></div></div>
+  ${qs.length?qs.map(q=>`<div class="qcard ${S.selected.has(q.id)?'sel':''}" data-q="${esc(q.id)}">${S.selectMode?'<div class="check">✓</div>':''}<div class="text">${esc(q.text)}</div>${q.source?`<div class="src">— ${esc(q.source)}</div>`:''}${q.memo?`<div class="memo">${esc(q.memo)}</div>`:''}
+    ${S.selectMode?'':`<div class="acts"><button class="btn sm" data-qdev="${esc(q.id)}">소재로 발전</button><button class="btn sm" data-qwrite="${esc(q.id)}">이 문구로 쓰기</button><button class="btn sm" data-copy="${esc(q.id)}">필사</button><button class="btn sm" data-vary="${esc(q.id)}">변주</button><button class="btn sm ghost" data-delq="${esc(q.id)}">삭제</button></div>`}</div>`).join(''):`<div class="empty"><div class="big">아직 모은 문구가 없어요</div>오늘 읽은 책에서 한 문장만 담아 보세요.</div>`}`;
+}
+function addIdea(text, ref){ const i={id:uid(), text, ref:ref||null, at:Date.now(), dev:null, answers:{}}; S.ideas[i.id]=i; Store.save('ideas',i); markDay(); return i; }
+function bindInsp(v){
+  v.querySelectorAll('[data-seg]').forEach(b=>b.onclick=()=>{ S.seg.insp=b.dataset.seg; render(); });
+  if(S.seg.insp==='idea'){
+    $('[data-iadd]',v).onclick=()=>{ const t=$('[data-itext]',v).value.trim(); if(!t) return toast('소재를 적어 주세요'); const i=addIdea(t); S.sub=i.id; render(); };
+    v.querySelectorAll('[data-idea]').forEach(b=>b.onclick=()=>{ S.sub=b.dataset.idea; render(); });
+    return;
+  }
+  const form=$('[data-form]',v);
+  const openForm=(pre={})=>{ form.innerHTML=`<div style="margin-top:10px">
+    <label class="field"><span>문구</span><textarea data-qtext placeholder="책 속 문구를 옮겨 적어요">${esc(pre.text||'')}</textarea></label>
+    <label class="field"><span>출처 (책 제목 / 지은이 / 쪽)</span><input data-qsrc value="${esc(pre.source||'')}"></label>
+    <label class="field"><span>나의 메모 (왜 이 문구가 남았나요?)</span><input data-qmemo></label>
+    <div style="display:flex;gap:8px"><button class="btn block" data-qcancel>취소</button><button class="btn primary block" data-qsave>담기</button></div></div>`;
+    $('[data-qcancel]',form).onclick=()=>form.innerHTML='';
+    $('[data-qsave]',form).onclick=()=>{ const text=$('[data-qtext]',form).value.trim(); if(!text) return toast('문구를 입력해 주세요');
+      const q={id:uid(), text, source:$('[data-qsrc]',form).value.trim(), memo:$('[data-qmemo]',form).value.trim(), at:Date.now()};
+      S.quotes[q.id]=q; Store.save('quotes',q); markDay(); render(); toast('문구를 담았어요'); };
+    $('[data-qtext]',form).focus();
+  };
+  $('[data-addtext]',v).onclick=()=>openForm();
+  const file=$('[data-file]',v);
+  $('[data-addphoto]',v).onclick=async()=>{ const ai=await getAI(); if(!ai||!S.aiImages){ toast(IS_PAGES?'사진 인식은 claude.ai 버전에서 쓸 수 있어요. 직접 적어 주세요.':'이 화면에서는 사진 인식을 쓸 수 없어요. 직접 적어 주세요.'); return openForm(); } file.click(); };
+  file.onchange=async()=>{ const f=file.files[0]; file.value=''; if(!f) return;
+    form.innerHTML=loadingHTML('사진 속 문구를 읽는 중…');
+    try{ const blob=await shrinkImage(f);
+      const d=await askAI(`이미지는 사용자가 읽고 있는 책의 한 페이지(또는 일부)를 찍은 사진입니다. 개인 독서 노트에 옮겨 적기 위한 것입니다.
+사진 속 문구를 보이는 그대로 정확히 옮겨 적으세요. 밑줄·형광펜·손가락으로 표시된 부분이 있으면 그 부분만, 없으면 중심 문단 하나만 옮기세요(최대 500자).
+고치거나 요약하지 말고, 읽을 수 없는 글자는 □로 표시하세요. 책 제목이나 쪽수가 보이면 source에, 없으면 빈 문자열.
+JSON으로만 답하세요: {"text":"옮겨 적은 문구","source":""}`,{images:[blob]});
+      openForm({text:d.text||'', source:d.source||''}); toast('읽어 낸 문구를 확인하고 담아 주세요');
+    }catch(e){ form.innerHTML=`${aiNoteHTML(e)}`; } };
+  v.querySelectorAll('[data-delq]').forEach(b=>b.onclick=()=>confirmSheet('이 문구를 삭제할까요?','삭제',()=>{ delete S.quotes[b.dataset.delq]; Store.del('quotes',b.dataset.delq); render(); }));
+  v.querySelectorAll('[data-qdev]').forEach(b=>b.onclick=()=>{ const q=S.quotes[b.dataset.qdev]; const i=addIdea(q.memo?`${q.memo}`:'책에서 만난 문구에서 출발한 소재', {text:q.text, source:q.source}); go('insp',i.id,'idea'); });
+  const sel=$('[data-sel]',v); if(sel) sel.onclick=()=>{ S.selectMode=!S.selectMode; S.selected.clear(); render(); };
+  v.querySelectorAll('[data-q]').forEach(card=>card.onclick=e=>{ if(!S.selectMode||e.target.closest('button')) return; const id=card.dataset.q;
+    if(S.selected.has(id)) S.selected.delete(id); else { if(S.selected.size>=5) return toast('최대 5개까지 고를 수 있어요'); S.selected.add(id); } render(); });
+  if(S.selectMode){ const bar=$('#weaveBar'); bar.hidden=false; bar.innerHTML=`<button class="btn primary" ${S.selected.size?'':'disabled'}>${S.selected.size}개 문구로 글감 엮기</button>`; bar.firstElementChild.onclick=weave; }
+  v.querySelectorAll('[data-vary]').forEach(b=>b.onclick=()=>{ const q=S.quotes[b.dataset.vary];
+    newWriting({genre:'free', title:'변주 연습', ref:{text:q.text, source:q.source}, prompt:'수집한 문구의 "구조"(문장 길이, 리듬, 대구, 시선의 이동)만 빌려 오고, 내용은 완전히 내 경험으로 바꿔 써 보세요. 원문의 단어는 최대한 쓰지 않는 것이 규칙이에요.'}); });
+  v.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{ const q=S.quotes[b.dataset.copy];
+    newWriting({genre:'free', title:'필사 노트', ref:{text:q.text, source:q.source}, prompt:'수집한 문구를 천천히 그대로 옮겨 적은 뒤, 한 줄 띄우고 "이 문장이 좋은 이유"와 "내가 배워 오고 싶은 기술"을 내 말로 적어 보세요.'}); });
+  v.querySelectorAll('[data-qwrite]').forEach(b=>b.onclick=()=>{ const q=S.quotes[b.dataset.qwrite]; pickGenreFor(g=>newWriting({genre:g, ref:{text:q.text, source:q.source}, prompt:'수집한 문구에서 출발하되, 문구를 베끼지 말고 내 경험과 시선으로 써 보세요.'})); });
+}
+async function weave(){
+  const qs=[...S.selected].map(id=>S.quotes[id]).filter(Boolean); if(!qs.length) return;
+  let c; const close=sheet(`<h3>글감 엮기</h3><div data-c>${loadingHTML('문구 사이의 실을 찾는 중…')}</div>`, el=>{c=$('[data-c]',el);});
+  const prompt=`당신은 문예창작과 교수이자 글쓰기 코치입니다. 사용자가 책에서 모은 문구들과 메모를 보고, 문구들 사이의 숨은 연결고리를 찾아 사용자가 "직접" 쓸 수 있는 새 글감 3개를 제안하세요.
+${NO_GHOSTWRITE}
+- 문구를 베끼거나 이어 쓰게 하지 말고, 사용자 자신의 경험과 시선으로 쓰게 만드는 방향이어야 합니다.
+- 장르는 poem, novel, essay, script, argument 중에서 서로 다르게.${styleContext()}
+[수집한 문구]
+${qs.map((q,i)=>`${i+1}. "${q.text.slice(0,600)}"${q.source?` (${q.source})`:''}${q.memo?` / 메모: ${q.memo}`:''}`).join('\n')}
+JSON으로만 답하세요: {"thread":"이 문구들을 꿰는 공통의 실 한 문장","ideas":[{"title":"글감 제목","genre":"poem|novel|essay|script|argument","angle":"어떤 각도로 쓰면 좋을지 2문장","question":"쓰기 전에 스스로 답해 볼 질문 1개"}]}`;
+  try{ const d=await askAI(prompt); if(!c.isConnected) return;
+    c.innerHTML=`${d.thread?`<p style="font-family:var(--serif);font-size:16px">${esc(d.thread)}</p>`:''}${(d.ideas||[]).map((x,i)=>`<div class="idea"><span class="tag ${esc(GENRES[x.genre]?x.genre:'free')}">${esc(GENRES[x.genre]?.name||'자유')}</span><h3>${esc(x.title)}</h3><div class="small">${esc(x.angle)}</div><div class="qq">Q. ${esc(x.question)}</div><button class="btn primary sm" style="margin-top:10px" data-i="${i}">이 글감으로 쓰기</button></div>`).join('')}`;
+    c.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{ const x=d.ideas[+b.dataset.i]; close(); S.selectMode=false; S.selected.clear();
+      newWriting({genre:GENRES[x.genre]?x.genre:'free', title:x.title, prompt:`${x.angle} (질문: ${x.question})`, ref:{text:qs.map(q=>q.text).join('\n\n'), source:qs.map(q=>q.source).filter(Boolean).join(' / ')}}); });
+  }catch(e){ if(c.isConnected) c.innerHTML=`${aiNoteHTML(e)}`; }
+}
+function pickGenreFor(cb){
+  sheet(`<h3>어떤 장르로 쓸까요?</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">${Object.entries(GENRES).map(([k,g])=>`<button class="btn block" data-g="${k}">${esc(g.name)}</button>`).join('')}</div>`,
+  (el,close)=>el.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{ close(); cb(b.dataset.g); }));
+}
+async function shrinkImage(file){
+  const url=URL.createObjectURL(file);
+  try{ const img=await new Promise((res,rej)=>{const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url;});
+    const sc=Math.min(1,1600/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=Math.round(img.width*sc); c.height=Math.round(img.height*sc);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height); return await new Promise(r=>c.toBlob(b=>r(b||file),'image/jpeg',0.85));
+  }catch(e){ return file; } finally{ URL.revokeObjectURL(url); }
+}
+/* ---- 6. 소재 발전 화면 ---- */
+function ideaHTML_v1(i){
+  const d=i.dev;
+  return `<button class="back" data-back>‹ 소재·영감</button>
+  <div class="card"><div class="small muted">${fmtDate(i.at)} 담은 소재</div><textarea class="ans" data-itext style="font-size:17px;border:none;padding:4px 0;background:transparent">${esc(i.text)}</textarea>
+  ${i.ref?`<div class="ref"><b>출발한 책 문구</b>${i.ref.source?` · <span class="small">${esc(i.ref.source)}</span>`:''}<div class="q" style="margin-top:4px">${esc(i.ref.text)}</div></div>`:''}</div>
+  <div data-area></div>
+  ${d?`<div class="card"><b class="small" style="color:var(--blue)">질문에 답하며 소재 키우기</b><p class="small muted" style="margin:2px 0 6px">짧게라도 직접 답해 보세요. 답이 쌓이면 글감이 됩니다.</p>
+    ${(d.questions||[]).map((q,k)=>`<div style="margin:12px 0"><div style="font-family:var(--serif)">Q${k+1}. ${esc(q)}</div><textarea class="ans" data-ans="${k}" placeholder="나의 답">${esc((i.answers||{})[k]||'')}</textarea></div>`).join('')}</div>
+    ${(d.angles||[]).length?`<h2>이 소재가 될 수 있는 글</h2>${d.angles.map((a,k)=>`<div class="idea"><span class="tag ${esc(GENRES[a.genre]?a.genre:'free')}">${esc(GENRES[a.genre]?.name||'자유')}</span><h3>${esc(a.title)}</h3><div class="small">${esc(a.angle)}</div><button class="btn primary sm" style="margin-top:10px" data-w="${k}">이 방향으로 쓰기</button></div>`).join('')}`:''}
+    ${(d.links||[]).length?`<div class="card tight"><b class="small">함께 엮어 볼 만한 소재</b><div class="kw">${d.links.map(x=>`<span style="background:#e9e2d3;color:var(--ink2)">${esc(x)}</span>`).join('')}</div></div>`:''}
+    <button class="btn block" data-dev style="margin-top:8px">내 답을 반영해 한 번 더 발전시키기</button>`
+  :`<button class="btn primary block" data-dev>이 소재 발전시키기</button>`}
+  <button class="btn ghost block" data-idel style="margin-top:10px">소재 삭제</button>`;
+}
+function bindIdea(v,i){
+  bindBack(v);
+  const it=$('[data-itext]',v); let t=null;
+  const save=()=>{ clearTimeout(t); t=setTimeout(()=>Store.save('ideas',i),1000); };
+  it.oninput=()=>{ i.text=it.value; save(); };
+  v.querySelectorAll('[data-ans]').forEach(a=>a.oninput=()=>{ i.answers={...(i.answers||{}),[a.dataset.ans]:a.value}; save(); });
+  $('[data-idel]',v).onclick=()=>confirmSheet('이 소재를 삭제할까요?','삭제',()=>{ delete S.ideas[i.id]; Store.del('ideas',i.id); S.sub=null; render(); });
+  v.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{ const a=i.dev.angles[+b.dataset.w];
+    const ans=(i.dev.questions||[]).map((q,k)=>(i.answers||{})[k]?`· ${q} → ${(i.answers||{})[k]}`:'').filter(Boolean).join('\n');
+    i.writingId='y'; Store.save('ideas',i);
+    newWriting({genre:GENRES[a.genre]?a.genre:'free', title:a.title, prompt:`소재: ${i.text}\n방향: ${a.angle}${ans?`\n\n나의 답:\n${ans}`:''}`, ref:i.ref}); });
+  $('[data-dev]',v).onclick=async()=>{
+    if(S.busy) return; S.busy=true; const area=$('[data-area]',v); area.innerHTML=loadingHTML('소재를 들여다보는 중…');
+    const answered=i.dev?(i.dev.questions||[]).map((q,k)=>(i.answers||{})[k]?`Q: ${q}\nA: ${(i.answers||{})[k]}`:'').filter(Boolean).join('\n'):'';
+    const prompt=`당신은 작가들의 소재와 영감을 함께 키워 주는 문예창작과 교수입니다. 사용자가 적어 둔 소재를 사용자가 직접 쓸 수 있는 글감으로 발전시키도록 도와주세요.
+${NO_GHOSTWRITE}
+- 소재를 대신 글로 풀어 쓰지 말고, 사용자가 자기 기억·경험·시선을 꺼내게 하는 질문을 하세요.
+[소재] ${i.text}
+${i.ref?`[출발한 책 문구] ${i.ref.text}`:''}
+${answered?`[이전 질문에 대한 사용자의 답 — 이를 바탕으로 더 깊이 들어가세요]\n${answered}`:''}
+JSON으로만 답하세요: {"questions":["소재를 구체화하는 질문 4개(감각, 인물, 갈등, 의미 등 서로 다른 각도)"],"angles":[{"title":"글감 제목","genre":"poem|novel|essay|script|argument","angle":"이 소재를 어떤 각도로 쓰면 좋을지 2문장"}],"links":["함께 엮어 볼 만한 다른 소재 키워드 3개"]}
+angles는 장르를 다르게 3개.`;
+    try{ const d=await askAI(prompt); i.dev=d; i.answers={}; await Store.save('ideas',i).catch(()=>{}); S.busy=false; render(); }
+    catch(e){ S.busy=false; area.innerHTML=`${aiNoteHTML(e)}`; }
+  };
+}
+
+/* ============ +α 서·논술형 ============ */
+function examHTML(){
+  const mine=Object.values(S.writings).filter(w=>w.problemId);
+  return `<h2 style="margin-top:4px">+α 서·논술형 대비</h2>
+  <p class="muted small" style="margin:0 0 8px">수능이 서술형·논술형으로 바뀐다고 가정하고 연습하는 공간이에요. 유형별 문항을 실전 타이머로 풀고, 채점관 관점의 기준표 피드백을 받아요.</p>
+  <div class="note">기초를 먼저 다지고 싶다면 배우기 → 글쓰기 기초의 「한 문장을 바르게」, 「문단 만들기」, 「무엇을 말하고 싶은가」를 추천해요.</div>
+  ${PROBLEMS.map(p=>{ const n=mine.filter(w=>w.problemId===p.id).length;
+    return `<button class="list-item" data-prob="${p.id}"><div class="grow"><div class="title">${esc(p.title)}</div><div class="sub"><span class="tag argument">${esc(p.type)}</span> ${p.target}자 · ${p.min}분${n?` · ${n}번 풀었음`:''}</div></div><span class="muted">›</span></button>`;}).join('')}
+  <button class="btn block" data-free style="margin-top:12px">내 문제로 논술 연습하기</button>
+  <h2>논술 레슨</h2>${trackHTML(ARG)}`;
+}
+function bindExam(v){
+  v.querySelectorAll('[data-prob]').forEach(b=>b.onclick=()=>{ S.sub=b.dataset.prob; render(); });
+  $('[data-free]',v).onclick=()=>newWriting({genre:'argument'});
+  v.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>go('learn',b.dataset.lesson));
+}
+function problemHTML_v1(id){
+  const p=PROBLEM_MAP[id]; const mine=Object.values(S.writings).filter(w=>w.problemId===id).sort((a,b)=>b.updatedAt-a.updatedAt);
+  return `<button class="back" data-back>‹ 서·논술형 대비</button>
+  <div class="small muted">${esc(p.type)}</div><h2 style="margin-top:2px">${esc(p.title)}</h2>
+  <div class="passage">${esc(p.passage)}</div>
+  <div class="task">${esc(p.question)}</div>
+  <p class="small muted">제한 시간 ${p.min}분 · 목표 ${p.target}자</p>
+  <button class="btn primary block" data-solve>답안 쓰기 (타이머와 함께)</button>
+  ${mine.length?`<h2>내 답안</h2>${mine.map(writingRow).join('')}`:''}`;
+}
+function bindProblem(v){
+  const p=PROBLEM_MAP[S.sub]; bindBack(v); bindOpenRows(v);
+  $('[data-solve]',v).onclick=()=>{
+    const w={id:uid(), genre:'argument', title:p.title+' 답안', body:'', prompt:'', lessonId:'', problemId:p.id, ref:null,
+      meta:{target:String(p.target), conds:p.question.match(/\d+자 내외/)?`${p.target}자 내외\n${p.question.replace(/\s*\d+자 내외로?/,'').trim()}`:p.question},
+      versions:[], collab:[], feedbacks:[], createdAt:Date.now(), updatedAt:Date.now()};
+    S.writings[w.id]=w; Store.save('writings',w); S.examEnd=Date.now()+p.min*60e3; S.examFor=w.id; go('write',w.id);
+  };
+}
+
+/* ============ 2차: 작가 지망생 맞춤 (첫 실행 · 15분 루틴 · 투고작 · 동기) ============ */
+const LIT = ['poem','novel','essay','script'];
+const GOALS = {debut:'등단·공모전', exam:'문예창작과 입시', hobby:'취미로 꾸준히', explore:'아직 탐색 중'};
+
+/* 공모전 분량 기준 (일반적인 기준. 공모전마다 다르니 요강 확인) */
+const CONTEST = {
+  poem:{label:'시 5편 내외', unit:'편', target:5},
+  novel:{label:'단편소설 원고지 70~80매 (약 14,000~16,000자)', unit:'자', target:14000},
+  essay:{label:'수필 원고지 15~20매 (약 3,000~4,000자)', unit:'자', target:3000},
+  script:{label:'단막 희곡·단편 시나리오 원고지 50~70매 (약 10,000~14,000자)', unit:'자', target:10000}
+};
+
+/* 요일별 15분 루틴: 0=일 … 6=토 */
+const ROUTINE_DAY = {1:'감각 스케치', 2:'한 장면', 3:'인물·화자', 4:'문구 수집·변주', 5:'퇴고의 날', 6:'투고작 이어 쓰기', 0:'읽고 모으기'};
+const ROUTINE_TASK = {
+  poem:{1:'오늘 본 사물 하나를 감정 단어 없이, 시각이 아닌 감각 두 가지를 넣어 6행 안으로 써 보세요.', 2:'하루 중 한 순간(1분 안의 일)을 붙잡아 한 편의 짧은 시로 써 보세요.', 3:'사람이 아닌 화자(사물, 동물, 장소)를 하나 정해 그 목소리로 8행을 써 보세요.', 6:'투고작 묶음에 넣을 시 한 편을 새로 쓰거나, 지난 시를 이어 다듬어 보세요.'},
+  novel:{1:'인물이 사는 방을 냄새, 소리, 촉감으로만 묘사하는 문단 하나를 써 보세요.', 2:'인물이 무언가를 원하고 거절당하는 짧은 장면 하나를 써 보세요(원고지 3매 안팎).', 3:'인물이 남에게 숨기는 것 하나를 정하고, 그것이 행동으로 살짝 드러나는 문단을 써 보세요.', 6:'투고작 소설의 다음 장면을 15분 동안 이어 써 보세요.'},
+  essay:{1:'요즘 자주 가는 장소 하나를 형용사 없이 디테일 다섯 개로 적어 보세요.', 2:'최근 마음에 남은 장면 하나를 시간순 설명 없이 그 순간만 써 보세요.', 3:'가족이나 친구 한 사람이 자주 하는 말 하나에서 시작하는 문단을 써 보세요.', 6:'투고작 수필의 전환 부분(생각이 꺾이는 지점)을 써 보세요.'},
+  script:{1:'대사 없이 지문만으로, 한 인물이 무언가를 망설이는 장면을 써 보세요.', 2:'두 인물이 서로 다른 것을 원하는 짧은 장면(S# 하나)을 써 보세요.', 3:'인물 한 명의 말버릇과 행동 습관을 정하고, 그것이 드러나는 대사 여섯 줄을 써 보세요.', 6:'투고작 대본의 다음 장면을 15분 동안 이어 써 보세요.'}
+};
+function kstDate(off=0){ return new Date(Date.now()+9*3600e3+off*86400e3); }
+function todayRoutine(){
+  const ob=S.profile.onboard||{}; const gs=(ob.genres&&ob.genres.length?ob.genres:LIT);
+  const dow=kstDate().getUTCDay(); const g=gs[(DAY_KEY+(S.routineOffset||0))%gs.length];
+  const mins=ob.minutes||15;
+  if(dow===4) return {dow, g, mins, kind:'quote', name:ROUTINE_DAY[4], task:'책을 읽다 남은 문구 하나를 수집하고, 그 문구의 구조만 빌려 내 이야기로 변주해 보세요.'};
+  if(dow===5) return {dow, g, mins, kind:'revise', name:ROUTINE_DAY[5], task:'이번 주에 쓴 조각 하나를 열어 "퇴고본 저장"을 누른 뒤, 소리 내어 읽으며 걸리는 곳을 고쳐 보세요.'};
+  if(dow===0) return {dow, g, mins, kind:'read', name:ROUTINE_DAY[0], task:'오늘은 가볍게. 좋아하는 작가의 글을 15분 읽고 마음에 남은 문구를 수집함에 담아 보세요.'};
+  return {dow, g, mins, kind:'write', name:ROUTINE_DAY[dow], task:ROUTINE_TASK[g][dow]};
+}
+
+/* ---- 첫 실행 안내 ---- */
+function showOnboarding(force){
+  const ob=S.profile.onboard||{goal:'debut', genres:[...LIT], minutes:15};
+  const st={goal:ob.goal, genres:new Set(ob.genres), minutes:ob.minutes};
+  const draw=(el,close)=>{
+    el.innerHTML=`<div class="grab"></div><h3>${force?'목표 설정 바꾸기':'반가워요! 먼저 세 가지만 알려 주세요'}</h3>
+    <p class="small muted">답에 맞춰 매일의 15분 루틴과 시작 경로를 추천해 드려요. 나중에 '나의 기록' 탭에서 바꿀 수 있어요.</p>
+    <div class="field"><span>1. 지금 가장 가까운 목표</span><div style="display:flex;flex-wrap:wrap;gap:6px">${Object.entries(GOALS).map(([k,n])=>`<button class="chip ${st.goal===k?'on':''}" data-goal="${k}">${n}</button>`).join('')}</div></div>
+    <div class="field"><span>2. 쓰고 싶은 장르 (여러 개)</span><div style="display:flex;flex-wrap:wrap;gap:6px">${LIT.map(k=>`<button class="chip ${st.genres.has(k)?'on':''}" data-gen="${k}">${GENRES[k].name}</button>`).join('')}</div></div>
+    <div class="field"><span>3. 하루에 쓸 수 있는 시간</span><div style="display:flex;flex-wrap:wrap;gap:6px">${[15,30,60].map(m=>`<button class="chip ${st.minutes===m?'on':''}" data-min="${m}">${m===60?'1시간 이상':m+'분'+(m===15?' 이하':' 내외')}</button>`).join('')}</div></div>
+    <button class="btn primary block" data-ok style="margin-top:14px" ${st.genres.size?'':'disabled'}>시작하기</button>`;
+    el.querySelectorAll('[data-goal]').forEach(b=>b.onclick=()=>{ st.goal=b.dataset.goal; draw(el,close); });
+    el.querySelectorAll('[data-gen]').forEach(b=>b.onclick=()=>{ st.genres.has(b.dataset.gen)?st.genres.delete(b.dataset.gen):st.genres.add(b.dataset.gen); draw(el,close); });
+    el.querySelectorAll('[data-min]').forEach(b=>b.onclick=()=>{ st.minutes=+b.dataset.min; draw(el,close); });
+    $('[data-ok]',el).onclick=()=>{ S.profile.onboard={goal:st.goal, genres:LIT.filter(g=>st.genres.has(g)), minutes:st.minutes, at:Date.now()}; Store.saveProfile(); close(); render();
+      if(!force) setTimeout(firstPathSheet,150); };
+  };
+  sheet('', (el,close)=>draw(el,close));
+}
+function firstPathSheet(){
+  const ob=S.profile.onboard; const g=ob.genres[0];
+  sheet(`<h3>이렇게 시작해 보세요</h3>
+    <div class="opt" style="display:block"><b>① 매일: 오늘의 ${ob.minutes}분</b><span>홈 맨 위 카드. 요일마다 할 일이 정해져 있어요 (월 감각 · 화 장면 · 수 인물 · 목 문구 · 금 퇴고 · 토 투고작 · 일 읽기).</span></div>
+    <div class="opt" style="display:block"><b>② 이번 주: 투고작 프로젝트 만들기</b><span>${esc(GENRES[g].name)}로 공모전 투고작을 하나 정해 두면, 매일 쓴 조각이 그 작품으로 모여요.</span></div>
+    <div class="opt" style="display:block"><b>③ 틈틈이: 투고 준비 레슨</b><span>15분짜리로 나눈 등단 대비 레슨이에요. 배우기 → 문창과 전공 맨 위.</span></div>
+    <button class="btn primary block" data-p style="margin-top:10px">투고작 프로젝트 만들기</button><button class="btn ghost block" data-x>나중에</button>`,
+  (el,close)=>{ $('[data-x]',el).onclick=close; $('[data-p]',el).onclick=()=>{ close(); newProjectSheet(); }; });
+}
+
+/* ---- 오늘의 15분 카드 ---- */
+function today15HTML(){
+  const r=todayRoutine(); const doneToday=(S.profile.log||{})[today()]>0;
+  const dn=['일','월','화','수','목','금','토'][r.dow];
+  return `<div class="card hero"><div class="label">오늘의 ${r.mins}분 · ${dn}요일 · ${esc(r.name)}${r.kind==='write'?' · '+esc(GENRES[r.g].name):''}</div>
+    <div class="prompt" style="font-size:17.5px">${esc(r.task)}</div>
+    <div class="row"><button class="btn primary" data-r15>${doneToday?'오늘 한 번 더':'⏱ '+r.mins+'분 시작'}</button>${r.kind==='write'?'<button class="btn light" data-r15s>다른 장르</button>':''}</div>
+    ${weekDotsHTML(true)}</div>`;
+}
+function startRoutine(){
+  const r=todayRoutine();
+  if(r.kind==='quote' || r.kind==='read'){ go('insp',null,'quote'); toast(r.kind==='read'?'읽다가 남은 문구를 담아 보세요':'문구를 담은 뒤 "변주"를 눌러 보세요'); return; }
+  if(r.kind==='revise'){
+    const w=Object.values(S.writings).filter(w=>charsNoSp(w.body)>0).sort((a,b)=>b.updatedAt-a.updatedAt)[0];
+    if(!w){ toast('아직 퇴고할 글이 없어요. 오늘은 새 조각을 써 볼까요?'); return newWriting({genre:r.g, prompt:ROUTINE_TASK[r.g][2], timerMin:r.mins}); }
+    S.examEnd=Date.now()+r.mins*60e3; S.examFor=w.id; w.timerMin=r.mins; go('write',w.id); toast('퇴고본 저장을 먼저 누르고 고쳐 보세요'); return;
+  }
+  const proj=activeProject(r.g);
+  newWriting({genre:r.g, title:`${r.name} 조각`, prompt:r.task, timerMin:r.mins, projectId: r.dow===6&&proj?proj.id:''});
+}
+
+/* ---- 투고작 프로젝트 ---- */
+const STAGES=[['collect','조각 모으기'],['draft','초고 잇기'],['revise','퇴고'],['ready','투고 준비 완료']];
+function activeProject(g){ return Object.values(S.projects).filter(p=>p.stage!=='ready'&&(!g||p.genre===g)).sort((a,b)=>b.at-a.at)[0]; }
+function projWritings(p){ return Object.values(S.writings).filter(w=>w.projectId===p.id).sort((a,b)=>a.createdAt-b.createdAt); }
+function projProgress(p){
+  const c=CONTEST[p.genre]; const ws=projWritings(p);
+  if(p.genre==='poem'){ const n=ws.filter(w=>w.final).length; return {n, t:c.target, pct:Math.min(100,Math.round(n/c.target*100)), label:`완성 시 ${n}/${c.target}편`}; }
+  const d=p.draftId&&S.writings[p.draftId]; const n=d?charsNoSp(d.body):ws.reduce((a,w)=>a+charsNoSp(w.body),0);
+  return {n, t:c.target, pct:Math.min(100,Math.round(n/c.target*100)), label:`${d?'초고':'조각 합계'} ${n.toLocaleString()} / ${c.target.toLocaleString()}자`};
+}
+function projStage(p){
+  if(p.stage==='ready') return 'ready';
+  const d=p.draftId&&S.writings[p.draftId];
+  if(p.genre==='poem'){ const ws=projWritings(p); if(ws.some(w=>(w.versions||[]).length)) return 'revise'; return ws.filter(w=>w.final).length>=2?'draft':'collect'; }
+  if(d && (d.versions||[]).length) return 'revise';
+  if(d) return 'draft';
+  return 'collect';
+}
+function projCardHTML(p){
+  const pr=projProgress(p), st=projStage(p), si=STAGES.findIndex(s=>s[0]===st);
+  return `<button class="list-item" data-proj="${esc(p.id)}" style="display:block"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(p.title)}</b><span class="tag ${esc(p.genre)}">${esc(GENRES[p.genre].name)}</span></div>
+    <div class="sub">${STAGES.map((s,i)=>`<span style="${i===si?'color:var(--red);font-weight:700':i<si?'color:var(--green)':''}">${i<si?'✓ ':''}${s[1]}</span>`).join(' › ')}</div>
+    <div class="prog"><i style="width:${pr.pct}%"></i></div><div class="sub">${esc(pr.label)}${p.contest?` · ${esc(p.contest)}`:''}</div></button>`;
+}
+function newProjectSheet(){
+  const ob=S.profile.onboard||{}; let g=(ob.genres||LIT)[0];
+  const draw=(el,close)=>{ el.innerHTML=`<div class="grab"></div><h3>투고작 프로젝트 만들기</h3><p class="small muted">매일 쓴 조각을 모아 공모전에 낼 한 작품으로 키워요.</p>
+    <div class="field"><span>장르</span><div style="display:flex;flex-wrap:wrap;gap:6px">${LIT.map(k=>`<button class="chip ${g===k?'on':''}" data-g="${k}">${GENRES[k].name}</button>`).join('')}</div></div>
+    <div class="note">일반적인 분량 기준: <b>${esc(CONTEST[g].label)}</b><br>공모전마다 기준이 다르니 꼭 요강을 확인하세요.</div>
+    <label class="field"><span>가제</span><input data-t placeholder="나중에 바꿔도 돼요"></label>
+    <label class="field"><span>목표 공모전·마감 (선택)</span><input data-c placeholder="예: ○○일보 신춘문예 / 12월 초"></label>
+    <button class="btn primary block" data-ok>만들기</button>`;
+    el.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{ g=b.dataset.g; draw(el,close); });
+    $('[data-ok]',el).onclick=()=>{ const p={id:uid(), genre:g, title:$('[data-t]',el).value.trim()||`${GENRES[g].name} 투고작`, contest:$('[data-c]',el).value.trim(), stage:'collect', draftId:'', checks:{}, at:Date.now()};
+      S.projects[p.id]=p; Store.save('projects',p); close(); S.seg.write='proj'; go('write','p:'+p.id); };
+  };
+  sheet('', draw);
+}
+function projListHTML(){
+  const ps=Object.values(S.projects).sort((a,b)=>b.at-a.at);
+  return `<p class="muted small" style="margin:6px 0">투고작 하나를 정하고, 매일의 짧은 조각을 모아 → 초고로 잇고 → 퇴고해서 → 투고 준비를 마쳐요.</p>
+  <button class="btn primary block" data-newp>+ 새 투고작 프로젝트</button>
+  ${ps.length?ps.map(projCardHTML).join(''):`<div class="empty"><div class="big">아직 투고작이 없어요</div>공모전에 내 보고 싶은 작품 하나를 정해 보세요.</div>`}`;
+}
+function projectHTML_v1(p){
+  const ws=projWritings(p).filter(w=>w.id!==p.draftId); const d=p.draftId&&S.writings[p.draftId];
+  const st=projStage(p), si=STAGES.findIndex(s=>s[0]===st), pr=projProgress(p), c=CONTEST[p.genre];
+  const judged=projWritings(p).some(w=>(w.feedbacks||[]).some(f=>f.persona==='judge'));
+  const revs=p.genre==='poem'?Math.min(...(projWritings(p).filter(w=>w.final).map(w=>(w.versions||[]).length).concat(projWritings(p).filter(w=>w.final).length?[]:[0]))):(d?(d.versions||[]).length:0);
+  const checks=[['len',`분량 충족 (${c.label})`, pr.pct>=100],['rev','퇴고 3회 이상', revs>=3],['judge','공모전 심사위원 피드백 1회 이상', judged],['title','제목 확정', !!(p.checks||{}).title],['rule','공모전 요강 확인 (분량·형식·마감·응모 자격)', !!(p.checks||{}).rule]];
+  return `<button class="back" data-back>‹ 투고작 목록</button>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:4px"><input class="title-in" data-pt value="${esc(p.title)}" style="font-size:20px;padding:4px 0"><span class="tag ${esc(p.genre)}">${esc(GENRES[p.genre].name)}</span></div>
+  ${p.contest?`<div class="small muted">${esc(p.contest)}</div>`:''}
+  <div class="card"><div class="small">${STAGES.map((s,i)=>`<span style="${i===si?'color:var(--red);font-weight:700':i<si?'color:var(--green)':'color:var(--muted)'}">${i<si?'✓ ':''}${s[1]}</span>`).join(' › ')}</div>
+    <div class="prog" style="margin-top:8px"><i style="width:${pr.pct}%"></i></div><div class="small muted" style="margin-top:4px">${esc(pr.label)}</div></div>
+  <h2>${p.genre==='poem'?'시 묶음':'조각'} (${ws.length})</h2>
+  <p class="small muted" style="margin:-4px 0 6px">${p.genre==='poem'?'투고할 시는 쓰기 화면에서 "완성작으로 표시"를 눌러 주세요.':'매일의 15분 조각이 여기에 모여요. 토요일 루틴은 자동으로 이 프로젝트에 들어와요.'}</p>
+  ${ws.map(w=>`<div style="display:flex;gap:8px;align-items:center">${p.genre!=='poem'&&!d?`<input type="checkbox" data-pick="${esc(w.id)}" checked style="width:20px;height:20px;flex:0 0 20px">`:''}<div style="flex:1;min-width:0">${writingRow(w).replace('</div><span class="muted">',`${w.final?' <span class="tag essay">완성</span>':''}</div><span class="muted">`)}</div></div>`).join('')||'<div class="empty" style="padding:10px">아직 조각이 없어요.</div>'}
+  <button class="btn block" data-addpiece>+ ${p.genre==='poem'?'시 한 편':'조각'} 쓰기 (${(S.profile.onboard||{}).minutes||15}분)</button>
+  ${p.genre!=='poem'?`<h2>초고</h2>${d?writingRow(d):`<p class="small muted">조각이 어느 정도 모이면, 고른 조각을 순서대로 이어 붙여 초고를 만들어요. 이어 붙인 뒤 이음새는 직접 다듬어요.</p><button class="btn primary block" data-mkdraft ${ws.length?'':'disabled'}>고른 조각으로 초고 만들기</button>`}`:''}
+  <h2>투고 준비 체크리스트</h2>
+  <div class="card">${checks.map(([k,l,ok])=>`<label style="display:flex;gap:10px;align-items:center;margin:8px 0">${['title','rule'].includes(k)?`<input type="checkbox" data-ck="${k}" ${ok?'checked':''} style="width:20px;height:20px">`:`<span style="width:20px;text-align:center">${ok?'✅':'⬜'}</span>`}<span>${esc(l)}</span></label>`).join('')}
+  <button class="btn ${checks.every(x=>x[2])?'primary':''} block" data-ready ${checks.every(x=>x[2])&&p.stage!=='ready'?'':'disabled'} style="margin-top:8px">${p.stage==='ready'?'투고 준비 완료!':'투고 준비 완료로 표시'}</button></div>
+  <button class="btn ghost block" data-pdel style="margin-top:10px">프로젝트 삭제 (글은 남아요)</button>`;
+}
+function bindProject(v,p){
+  $('[data-back]',v).onclick=()=>{ S.sub=null; render(); };
+  bindOpenRows(v);
+  const pt=$('[data-pt]',v); let t; pt.oninput=()=>{ p.title=pt.value; clearTimeout(t); t=setTimeout(()=>Store.save('projects',p),1000); };
+  $('[data-addpiece]',v).onclick=()=>{ const r=todayRoutine(); newWriting({genre:p.genre, title:p.genre==='poem'?'':'조각', projectId:p.id, timerMin:(S.profile.onboard||{}).minutes||15, prompt:p.genre==='poem'?'투고작 묶음에 들어갈 시 한 편':'투고작의 한 장면이나 한 문단을 써 보세요. 순서는 나중에 정해도 돼요.'}); };
+  const mk=$('[data-mkdraft]',v);
+  if(mk) mk.onclick=()=>{
+    const ids=[...v.querySelectorAll('[data-pick]')].filter(c=>c.checked).map(c=>c.dataset.pick); if(!ids.length) return toast('이을 조각을 골라 주세요');
+    const body=ids.map(id=>S.writings[id].body.trim()).filter(Boolean).join('\n\n* * *\n\n');
+    const w={id:uid(), genre:p.genre, title:p.title+' (초고)', body, prompt:'조각 사이의 "* * *"는 이음새예요. 이음새를 직접 다듬어 하나의 흐름으로 만들어 보세요.', lessonId:'', problemId:'', ref:null, projectId:p.id, kind:'draft', meta:{}, versions:[], collab:[], feedbacks:[], createdAt:Date.now(), updatedAt:Date.now()};
+    S.writings[w.id]=w; Store.save('writings',w); p.draftId=w.id; Store.save('projects',p); toast('초고를 만들었어요. 이음새를 다듬어 보세요'); go('write',w.id);
+  };
+  v.querySelectorAll('[data-ck]').forEach(c=>c.onchange=()=>{ p.checks={...(p.checks||{}),[c.dataset.ck]:c.checked}; Store.save('projects',p); render(); });
+  $('[data-ready]',v).onclick=()=>{ p.stage='ready'; p.readyAt=Date.now(); Store.save('projects',p); render(); toast('투고 준비 완료! 배지를 받았어요',3500); };
+  $('[data-pdel]',v).onclick=()=>confirmSheet('프로젝트를 삭제할까요? 안의 글은 "나의 글"에 남아요.','삭제',()=>{ projWritings(p).forEach(w=>{ w.projectId=''; Store.save('writings',w); }); delete S.projects[p.id]; Store.del('projects',p.id); S.sub=null; render(); });
+}
+
+/* ---- 동기 장치 ---- */
+function weekDays(){ // 이번 주 월~일 날짜 문자열
+  const d=kstDate(); const dow=(d.getUTCDay()+6)%7; const out=[];
+  for(let i=0;i<7;i++) out.push(kstDate(i-dow).toISOString().slice(0,10)); return out;
+}
+function weekDotsHTML(onDark){
+  const log=S.profile.log||{}; const days=weekDays(); const done=days.filter(d=>(log[d]||0)>0).length; const goal=(S.profile.onboard||{}).weekGoal||5;
+  const t=today();
+  return `<div style="margin-top:14px;display:flex;align-items:center;gap:10px"><div style="display:flex;gap:5px">${days.map((d,i)=>`<span title="${d}" style="width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:10.5px;${(log[d]||0)>0?'background:var(--red);color:#fff':d===t?`border:1.5px solid ${onDark?'#e7a79c':'var(--red)'};color:${onDark?'#f6f1e7':'var(--ink)'}`:`background:${onDark?'rgba(255,255,255,.12)':'#ebe4d5'};color:${onDark?'#cfc6b6':'var(--muted)'}`}">${'월화수목금토일'[i]}</span>`).join('')}</div>
+  <span style="font-size:12.5px;${onDark?'color:#d9cfbf':'color:var(--muted)'}">이번 주 ${done}/${goal}일${done>=goal?' 🎉':''}</span></div>`;
+}
+function logChars(delta){
+  if(delta<=0) return; const d=today(); const log=S.profile.log||(S.profile.log={}); log[d]=(log[d]||0)+delta;
+  const keys=Object.keys(log).sort(); while(keys.length>120) delete log[keys.shift()];
+  clearTimeout(S._logT); S._logT=setTimeout(()=>Store.saveProfile(),4000);
+}
+function weeklyChartHTML(){
+  const log=S.profile.log||{}; const weeks=[];
+  for(let w=7;w>=0;w--){ let sum=0; for(let i=0;i<7;i++){ const k=kstDate(-(w*7)-((kstDate().getUTCDay()+6)%7)+i).toISOString().slice(0,10); sum+=log[k]||0; } weeks.push(sum); }
+  const max=Math.max(1,...weeks);
+  return `<div class="card"><b class="small">주별로 쓴 글자 (최근 8주)</b><div style="display:flex;align-items:flex-end;gap:6px;height:110px;margin-top:10px">${weeks.map((n,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%"><span style="font-size:10px;color:var(--muted)">${n?n.toLocaleString():''}</span><div style="width:100%;border-radius:5px 5px 0 0;background:${i===7?'var(--red)':'var(--ink2)'};height:${Math.max(2,n/max*80)}px"></div></div>`).join('')}</div>
+  <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-top:4px"><span>7주 전</span><span>이번 주</span></div></div>`;
+}
+function badges(){
+  const ws=Object.values(S.writings), ps=Object.values(S.projects), total=ws.reduce((a,w)=>a+charsNoSp(w.body),0), st=streak();
+  return [
+    ['✏️','첫 글', ws.some(w=>charsNoSp(w.body)>0)],['🔥','3일 연속', st>=3],['🌳','7일 연속', st>=7],['📅','주간 목표 달성', weekDays().filter(d=>(S.profile.log||{})[d]>0).length>=((S.profile.onboard||{}).weekGoal||5)],
+    ['🔁','첫 퇴고', ws.some(w=>(w.versions||[]).length)],['💬','피드백 10회', ws.reduce((a,w)=>a+(w.feedbacks||[]).length,0)>=10],['📄','1만 자', total>=10000],['📚','5만 자', total>=50000],
+    ['🎓','레슨 10개', Object.keys(S.profile.lessonsDone||{}).length>=10],['🗂️','첫 투고작', ps.length>0],['🧵','첫 초고', ps.some(p=>p.draftId)],['🏅','투고 준비 완료', ps.some(p=>p.stage==='ready')]
+  ];
+}
+function badgesHTML(){
+  const b=badges(); return `<div class="card"><b class="small">배지 ${b.filter(x=>x[2]).length}/${b.length}</b><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px">${b.map(([i,n,ok])=>`<div style="text-align:center;opacity:${ok?1:.32}"><div style="font-size:24px;filter:${ok?'none':'grayscale(1)'}">${i}</div><div style="font-size:11px">${n}</div></div>`).join('')}</div></div>`;
+}
+
+/* ============ 덧붙임: 나의 문체 ============ */
+function styleHTML(){
+  const ws=Object.values(S.writings), eligible=ws.filter(w=>charsNoSp(w.body)>=150);
+  const gc={}; ws.forEach(w=>gc[w.genre]=(gc[w.genre]||0)+1); const gmax=Math.max(1,...Object.values(gc));
+  const revs=ws.reduce((a,w)=>a+(w.versions||[]).length,0), fbs=ws.reduce((a,w)=>a+(w.feedbacks||[]).length,0);
+  const hist=S.profile.styleHistory||[], cur=hist.slice(-1)[0];
+  return `<h2 style="margin-top:4px">나의 기록 · 문체</h2><p class="muted small" style="margin:0 0 8px">문체는 한 번에 생기지 않아요. 쓰고, 피드백받고, 고친 흔적이 쌓여 만들어집니다. 분석된 문체는 이후 협동 글쓰기와 작가 피드백에 반영돼요.</p>
+  <div class="card tight" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="small">${S.profile.onboard?`${esc(GOALS[S.profile.onboard.goal]||'')} · ${S.profile.onboard.genres.map(g=>GENRES[g].name).join('·')} · 하루 ${S.profile.onboard.minutes}분`:'목표가 아직 없어요'}</span><button class="btn sm" data-onb>바꾸기</button></div>
+  <div class="card">${weekDotsHTML(false)}</div>
+  ${weeklyChartHTML()}
+  ${badgesHTML()}
+  ${appToolsHTML()}
+  <div class="stats"><div class="stat"><b>${ws.reduce((a,w)=>a+charsNoSp(w.body),0).toLocaleString()}</b><span>쓴 글자</span></div><div class="stat"><b>${revs}</b><span>퇴고</span></div><div class="stat"><b>${fbs}</b><span>피드백</span></div></div>
+  ${ws.length?`<div class="card"><b class="small">장르별 글</b>${Object.entries(GENRES).filter(([k])=>gc[k]).map(([k,g])=>`<div class="gbar"><span class="lab">${esc(g.name)}</span><span class="track2"><i style="width:${gc[k]/gmax*100}%"></i></span><span>${gc[k]}</span></div>`).join('')}</div>`:''}
+  <div data-area>${cur?styleCardHTML(cur):`<div class="card"><div class="empty" style="padding:14px 4px"><div class="big">문체 지도가 아직 비어 있어요</div>150자 이상 쓴 글이 3편 모이면 분석할 수 있어요. (지금 ${eligible.length}편)</div></div>`}</div>
+  <button class="btn ${eligible.length>=3?'primary':''} block" data-analyze ${eligible.length>=3?'':'disabled'}>${cur?'문체 다시 분석하기':'내 문체 분석하기'}</button>
+  ${hist.length>1?`<h2>문체의 변화</h2>${hist.slice(0,-1).reverse().map(h=>`<div class="card tight"><div class="small muted">${fmtDate(h.at)} · 글 ${h.count}편 기준</div><div class="kw">${(h.keywords||[]).map(k=>`<span style="background:#e9e2d3;color:var(--ink2)">${esc(k)}</span>`).join('')}</div></div>`).join('')}`:''}`;
+}
+function styleCardHTML(s){
+  return `<div class="card"><div class="small muted">${fmtDate(s.at)} 분석 · 글 ${s.count}편 기준</div><div class="kw">${(s.keywords||[]).map(k=>`<span>${esc(k)}</span>`).join('')}</div>
+    <div class="portrait">${esc(s.portrait||'')}</div>
+    ${(s.strengths||[]).length?`<div class="fb-sec good"><b>나만의 무기</b><ul style="padding-left:20px;margin:0">${s.strengths.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}
+    ${(s.habits||[]).length?`<div class="fb-sec fix"><b>문장 습관</b>${s.habits.map(h=>`<div class="fb-item"><b class="small">${esc(h.name)}</b>${h.quote?`<div class="quote" style="cursor:default">“${esc(h.quote)}”</div>`:''}<div class="small">${esc(h.note)}</div></div>`).join('')}</div>`:''}
+    ${s.growth?`<div class="fb-sec q"><b>지난 분석 이후의 변화</b><div>${esc(s.growth)}</div></div>`:''}
+    ${(s.experiments||[]).length?`<div class="mission"><b>다음 문체 실험</b><ol style="padding-left:18px;margin:4px 0 0">${s.experiments.map(x=>`<li style="margin:3px 0">${esc(x)}</li>`).join('')}</ol></div>`:''}</div>`;
+}
+function bindStyle_v1(v){
+  $('[data-onb]',v).onclick=()=>showOnboarding(true);
+  bindAppTools(v);
+  const b=$('[data-analyze]',v); if(!b) return;
+  b.onclick=async()=>{ if(S.busy) return; S.busy=true; b.disabled=true;
+    const area=$('[data-area]',v); area.innerHTML=loadingHTML('지금까지의 문장을 모두 읽는 중…');
+    const ws=Object.values(S.writings).filter(w=>charsNoSp(w.body)>=150).sort((a,b)=>b.updatedAt-a.updatedAt).slice(0,8);
+    const prev=(S.profile.styleHistory||[]).slice(-1)[0];
+    const prompt=`당신은 문체론을 가르치는 문예창작과 교수입니다. 한 사람이 직접 쓴 글 ${ws.length}편을 읽고 이 사람만의 문체를 분석하세요. 목표는 이 사람이 "나만의 문체"를 자각하고 의식적으로 발전시키도록 돕는 것입니다.
+${NO_GHOSTWRITE}
+- 평가보다 관찰을. 장점은 무기로, 습관은 중립적으로 설명하세요.
+${prev?`- 지난 분석(키워드: ${(prev.keywords||[]).join(', ')} / ${prev.portrait||''})과 비교해 달라진 점을 growth에 적으세요.`:'- growth는 빈 문자열로 두세요.'}
+${ws.map((w,i)=>`[글 ${i+1}] (${GENRES[w.genre]?.name}) ${w.title||''}\n"""\n${w.body.slice(0,1800)}\n"""`).join('\n\n')}
+JSON으로만 답하세요: {"keywords":["문체 키워드 4~5개"],"portrait":"이 사람의 문체를 그림처럼 묘사한 2~3문장","strengths":["나만의 무기 2~3개"],"habits":[{"name":"습관 이름","quote":"글에서 그대로 가져온 30자 이내 예","note":"효과와 의식적으로 다뤄 볼 방법"}],"growth":"","experiments":["문체를 넓히기 위한 다음 쓰기 실험 3개"]}`;
+    try{ const d=await askAI(prompt,{tier:'complex'}); (S.profile.styleHistory||(S.profile.styleHistory=[])).push({...d, at:Date.now(), count:ws.length});
+      if(S.profile.styleHistory.length>6) S.profile.styleHistory.shift(); await Store.saveProfile().catch(()=>{}); S.busy=false; render(); toast('문체 지도를 새로 그렸어요');
+    }catch(e){ S.busy=false; b.disabled=false; area.innerHTML=`${aiNoteHTML(e)}`; } };
+}
+
+/* ============ [추가] 백업 코드 · 설치 ============ */
+function appToolsHTML(){
+  return `<div class="card"><b class="small">앱 · 데이터</b>
+    <p class="small muted" style="margin:4px 0 8px">${Store.mode==='db'?'지금은 claude.ai 계정에 저장되고 있어요.':'지금은 이 기기(브라우저)에 저장되고 있어요. 브라우저 데이터를 지우면 사라지니 가끔 백업해 두세요.'} 백업 코드로 claude.ai 버전과 설치형 앱 사이, 또는 다른 기기로 글을 옮길 수 있어요.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-bk>백업 코드 복사</button>${IS_PAGES?'<button class="btn sm" data-bkf>파일로 저장</button>':''}<button class="btn sm" data-rs>백업 불러오기</button></div>
+    ${IS_PAGES?`<div style="margin-top:10px">${S.installEvt?'<button class="btn primary sm" data-inst>홈 화면에 설치</button>':''}<p class="small muted" style="margin:6px 0 0">홈 화면에 추가: 안드로이드 크롬 ⋮ → 홈 화면에 추가 / 아이폰 사파리 공유 → 홈 화면에 추가</p><p class="small" style="margin:6px 0 0"><a href="${ARTIFACT_URL}" target="_blank" rel="noopener" style="color:var(--red)">AI 기능이 있는 claude.ai 버전 열기 ›</a></p></div>`:''}
+  </div>`;
+}
+function backupCode(){
+  const data={app:'moongjakga', v:1, at:Date.now(), profile:S.profile, writings:S.writings, quotes:S.quotes, ideas:S.ideas, projects:S.projects};
+  return 'MJK1:'+btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+}
+async function copyText(t){
+  try{ await navigator.clipboard.writeText(t); return true; }catch(e){}
+  try{ const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); const ok=document.execCommand('copy'); ta.remove(); return ok; }catch(e){ return false; }
+}
+function bindAppTools(v){
+  const bk=$('[data-bk]',v); if(bk) bk.onclick=async()=>{ const c=backupCode();
+    if(await copyText(c)) toast('백업 코드를 복사했어요. 메모장 등에 붙여 두세요');
+    else sheet(`<h3>백업 코드</h3><p class="small muted">아래 코드를 길게 눌러 전체 선택 후 복사하세요.</p><textarea class="ans" style="min-height:160px;font-family:monospace;font-size:11px" readonly>${esc(c)}</textarea>`); };
+  const bf=$('[data-bkf]',v); if(bf) bf.onclick=()=>{ const blob=new Blob([backupCode()],{type:'text/plain'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`뭉작가_백업_${today()}.txt`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); };
+  const rs=$('[data-rs]',v); if(rs) rs.onclick=()=>sheet(`<h3>백업 불러오기</h3><p class="small muted">백업 코드를 붙여 넣거나 백업 파일을 고르세요. 같은 글은 백업 내용으로 바뀌고, 이 기기에만 있는 글은 그대로 남아요.</p>
+      <textarea class="ans" data-code style="min-height:120px;font-family:monospace;font-size:11px" placeholder="MJK1:..."></textarea>
+      <input type="file" accept=".txt,text/plain" data-bfile style="margin:8px 0;font-size:13px">
+      <button class="btn primary block" data-go>불러오기</button>`,
+    (el,close)=>{ $('[data-bfile]',el).onchange=async e=>{ const f=e.target.files[0]; if(f) $('[data-code]',el).value=(await f.text()).trim(); };
+      $('[data-go]',el).onclick=async()=>{ const raw=$('[data-code]',el).value.trim();
+        try{ if(!raw.startsWith('MJK1:')) throw 0; const d=JSON.parse(decodeURIComponent(escape(atob(raw.slice(5))))); if(d.app!=='moongjakga') throw 0;
+          S.profile={...defaultProfile(),...S.profile,...d.profile, days:[...new Set([...(S.profile.days||[]),...(d.profile.days||[])])].sort(), lessonsDone:{...(S.profile.lessonsDone||{}),...(d.profile.lessonsDone||{})}};
+          await Store.saveProfile().catch(()=>{});
+          for(const c of COLS){ for(const [id,o] of Object.entries(d[c]||{})){ S[c][id]=o; await Store.save(c,o).catch(()=>{}); } }
+          close(); render(); toast('백업을 불러왔어요');
+        }catch(e){ toast('백업 코드가 올바르지 않아요'); } }; });
+  const ins=$('[data-inst]',v); if(ins) ins.onclick=async()=>{ const e=S.installEvt; if(!e) return; e.prompt(); try{ await e.userChoice; }catch(_){} S.installEvt=null; render(); };
+}
+if(IS_PAGES){
+  window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); S.installEvt=e; if(S.tab==='style') render(); });
+  if('serviceWorker' in navigator && location.protocol!=='file:') window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+/* ================= v4 UI — 미니멀 종이 (이전 화면 함수를 덮어씀) ================= */
+const IC = {
+  back:'<path d="M15 5l-7 7 7 7"/>',
+  more:'<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  collab:'<path d="M4 6h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><path d="M18 9h1a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1v2l-3-2"/>',
+  stuck:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14"/><path d="M12 17h.01"/>',
+  tools:'<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>',
+  fb:'<path d="M5 4h14a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1h-8l-5 4v-4H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M8 9h8M8 12h5"/>',
+  chev:'<path d="M9 6l6 6-6 6"/>'
+};
+const svgI = (k,cls='') => `<svg viewBox="0 0 24 24" class="${cls}">${IC[k]}</svg>`;
+const WD = ['일','월','화','수','목','금','토'];
+function fmtFull(t){ const d=new Date(t); return `${d.getMonth()+1}월 ${d.getDate()}일 ${WD[d.getDay()]}요일`; }
+function persMono(k){ return (PERSONAS[k]?.name||'AI').replace(/^(현직|문학|공모전|문예창작과|서·논술형)\s*/,'').slice(0,1); }
+
+/* ---------- 라우팅 (4탭) ---------- */
+const TABS4=['home','write','learn','me'];
+function mapTab(t){ return t==='insp'?'write':t==='exam'?'learn':t==='style'?'me':t; }
+function setTab(t){ S.tab=t; document.querySelectorAll('nav.bottom a').forEach(a=>a.classList.toggle('on',a.dataset.tab===t)); }
+function route(){ const h=mapTab((location.hash||'#home').slice(1)); const t=TABS4.includes(h)?h:'home'; if(t!==S.tab){ S.sub=null; S.selectMode=false; S.selected.clear(); } setTab(t); render(); }
+function go(tab, sub, seg){
+  if(tab==='insp'){ S.seg.write='drawer'; if(seg) S.seg.insp=seg; }
+  else if(tab==='exam'){ S.seg.learn='exam'; }
+  else if(seg) S.seg[tab]=seg;
+  tab=mapTab(tab);
+  if(location.hash!=='#'+tab){ S.tab=null; S._pendingSub=sub||null; location.hash=tab; } else { S.sub=sub||null; render(); }
+}
+function render(){
+  const v=$('#view'); clearTimers(); $('#weaveBar').hidden=true; document.body.classList.remove('editing'); $('#fab').hidden=true; $('#edTools').hidden=true; hideComment();
+  const t=S.tab;
+  if(t==='home'){ v.innerHTML=homeHTML(); bindHome(v); }
+  else if(t==='write'){
+    if(S.sub&&S.writings[S.sub]){ v.innerHTML=editorHTML(S.writings[S.sub]); bindEditor(v,S.writings[S.sub]); }
+    else if(S.sub&&S.sub.startsWith('p:')&&S.projects[S.sub.slice(2)]){ const p=S.projects[S.sub.slice(2)]; v.innerHTML=projectHTML(p); bindProject(v,p); }
+    else if(S.sub&&S.ideas[S.sub]){ v.innerHTML=ideaHTML(S.ideas[S.sub]); bindIdea(v,S.ideas[S.sub]); }
+    else { v.innerHTML=writeListHTML(); bindWriteList(v); }
+  }
+  else if(t==='learn'){
+    if(S.sub&&LESSON_MAP[S.sub]){ v.innerHTML=lessonHTML(S.sub); bindLesson(v); }
+    else if(S.sub&&PROBLEM_MAP[S.sub]){ v.innerHTML=problemHTML(S.sub); bindProblem(v); }
+    else { v.innerHTML=learnHTML(); bindLearn(v); }
+  }
+  else if(t==='me'){
+    if(S.sub==='about'){ v.innerHTML=aboutHTML(); bindBack(v); }
+    else { v.innerHTML=styleHTML(); bindStyle(v); }
+  }
+  window.scrollTo(0,0);
+}
+
+/* ---------- 오늘 ---------- */
+function todayItem(){
+  if(S.dailyOffset>0){ const p=DAILY[(DAY_KEY+S.dailyOffset)%DAILY.length]; return {kind:'write', g:p.g, task:p.t, name:'오늘의 글감', mins:(S.profile.onboard||{}).minutes||15, dow:kstDate().getUTCDay(), daily:true}; }
+  return todayRoutine();
+}
+function startRoutine(){
+  const r=todayItem();
+  if(r.daily) return newWriting({genre:r.g, prompt:r.task, timerMin:r.mins});
+  if(r.kind==='quote' || r.kind==='read'){ go('insp',null,'quote'); toast(r.kind==='read'?'읽다가 남은 문구를 담아 보세요':'문구를 담은 뒤 "변주"를 눌러 보세요'); return; }
+  if(r.kind==='revise'){
+    const w=Object.values(S.writings).filter(w=>charsNoSp(w.body)>0).sort((a,b)=>b.updatedAt-a.updatedAt)[0];
+    if(!w){ toast('아직 퇴고할 글이 없어요. 새 조각을 써 볼까요?'); return newWriting({genre:r.g, prompt:ROUTINE_TASK[r.g][2], timerMin:r.mins}); }
+    S.examEnd=Date.now()+r.mins*60e3; S.examFor=w.id; w.timerMin=r.mins; go('write',w.id); toast('도구 → 퇴고본 저장을 먼저 누르고 고쳐 보세요'); return;
+  }
+  const proj=activeProject(r.g);
+  newWriting({genre:r.g, title:'', prompt:r.task, timerMin:r.mins, projectId: r.dow===6&&proj?proj.id:''});
+}
+function weekDotsHTML(){
+  const log=S.profile.log||{}, days=weekDays(), t=today(), goal=(S.profile.onboard||{}).weekGoal||5;
+  const done=days.filter(d=>(log[d]||0)>0).length;
+  return `<div class="week"><div class="dots">${days.map((d,i)=>`<span class="d ${(log[d]||0)>0?'on':''} ${d===t?'now':''}"><i></i>${'월화수목금토일'[i]}</span>`).join('')}</div><span class="sum">이번 주 ${done}/${goal}일</span></div>`;
+}
+function homeHTML(){
+  const ws=Object.values(S.writings).sort((a,b)=>b.updatedAt-a.updatedAt); const ap=activeProject();
+  let top;
+  if(!S.profile.onboard){
+    top=`<section class="today"><div class="date">${fmtFull(Date.now())}</div><p class="task">목표와 장르, 하루 시간을 알려 주시면 매일의 루틴을 만들어 드려요.</p><div class="acts"><button class="link" data-onb>시작 설정 ${svgI('chev','')}</button></div></section>`;
+  } else {
+    const r=todayItem();
+    top=`<section class="today"><div class="date">${fmtFull(Date.now())}</div>
+      <div class="eyebrow" style="margin-top:14px">오늘의 ${r.mins}분 · <b>${esc(r.name)}</b>${r.kind==='write'?` · ${esc(GENRES[r.g].name)}`:''}</div>
+      <p class="task">${esc(r.task)}</p>
+      <div class="acts"><button class="btn primary" data-r15>쓰기 시작</button><button class="link mute" data-shuffle>다른 글감</button></div></section>`;
+  }
+  return `${top}
+  ${weekDotsHTML()}
+  ${ap?`<h2>진행 중인 투고작</h2><div class="rows">${projCardHTML(ap)}</div>`:(S.profile.onboard?`<h2>투고작</h2><div class="rows"><button class="row-item" data-newp2><div class="grow"><div class="t">투고작 프로젝트 만들기</div><div class="m">매일의 조각을 공모전 투고작 한 편으로</div></div>${svgI('chev','chevs')}</button></div>`:'')}
+  ${ws.length?`<h2>이어 쓰기</h2><div class="rows">${ws.slice(0,3).map(writingRow).join('')}</div>`:''}`;
+}
+function bindHome(v){
+  bindOpenRows(v);
+  const a=$('[data-r15]',v); if(a) a.onclick=startRoutine;
+  const b=$('[data-shuffle]',v); if(b) b.onclick=()=>{ S.dailyOffset++; render(); };
+  const c=$('[data-onb]',v); if(c) c.onclick=()=>showOnboarding();
+  const d=$('[data-newp2]',v); if(d) d.onclick=newProjectSheet;
+  v.querySelectorAll('[data-proj]').forEach(x=>x.onclick=()=>{ S.seg.write='proj'; go('write','p:'+x.dataset.proj); });
+}
+function firstPathSheet(){
+  const ob=S.profile.onboard; const g=ob.genres[0];
+  sheet(`<h3>뭉작가의 약속</h3><p class="serif" style="font-size:16px;line-height:1.8;margin:6px 0 14px">AI는 질문하고, 문장은 당신이 씁니다. 뭉작가의 AI는 대신 써 주지 않아요. 묻고, 밑줄 긋고, 방향만 짚어 줍니다.</p>
+    <div class="rows">
+      <div class="row-item"><div class="grow"><div class="t">매일 · 오늘의 ${ob.minutes}분</div><div class="m">요일마다 할 일이 정해져 있어요 — 월 감각 · 화 장면 · 수 인물 · 목 문구 · 금 퇴고 · 토 투고작 · 일 읽기</div></div></div>
+      <div class="row-item"><div class="grow"><div class="t">이번 주 · 투고작 하나 정하기</div><div class="m">${esc(GENRES[g].name)} 투고작을 정해 두면 매일의 조각이 그 작품으로 모여요</div></div></div>
+      <div class="row-item"><div class="grow"><div class="t">틈틈이 · 투고 준비 레슨</div><div class="m">배우기 → 전공 맨 위</div></div></div>
+    </div>
+    <button class="btn primary block" data-p style="margin-top:18px">투고작 프로젝트 만들기</button><button class="btn ghost block" data-x>나중에</button>`,
+  (el,close)=>{ $('[data-x]',el).onclick=close; $('[data-p]',el).onclick=()=>{ close(); newProjectSheet(); }; });
+}
+
+/* ---------- 쓰기 목록 ---------- */
+function writingRow(w){
+  const fb=(w.feedbacks||[]).length;
+  return `<button class="row-item" data-open="${esc(w.id)}"><div class="grow"><div class="t">${esc(w.title||firstLine(w.body)||'제목 없음')}</div>
+    <div class="m">${esc(GENRES[w.genre]?.name||'자유')} · ${charsNoSp(w.body).toLocaleString()}자${(w.versions||[]).length?` · 퇴고 ${w.versions.length}`:''}${fb?` · 피드백 ${fb}`:''}${w.projectId&&S.projects[w.projectId]?` · ${esc(S.projects[w.projectId].title)}`:''}</div></div>
+    <span class="chev">${svgI('chev')}</span></button>`;
+}
+function firstLine(b){ const l=(b||'').split('\n').find(x=>x.trim()); return l?l.trim().slice(0,30):''; }
+function projCardHTML(p){
+  const pr=projProgress(p), st=projStage(p), si=STAGES.findIndex(s=>s[0]===st);
+  return `<button class="row-item" data-proj="${esc(p.id)}" style="display:block"><div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><span class="t serif" style="font-size:16px">${esc(p.title)}</span><span class="m" style="font-size:12px;color:var(--muted)">${esc(GENRES[p.genre].name)} · ${esc(STAGES[si][1])}</span></div>
+    <div class="prog"><i style="width:${pr.pct}%"></i></div><div class="m" style="font-size:12px;color:var(--muted);margin-top:6px">${esc(pr.label)}${p.contest?` · ${esc(p.contest)}`:''}</div></button>`;
+}
+function writeListHTML(){
+  const seg=S.seg.write||'mine';
+  const head=`<div class="seg"><button data-wseg="mine" class="${seg==='mine'?'on':''}">원고</button><button data-wseg="proj" class="${seg==='proj'?'on':''}">투고작</button><button data-wseg="drawer" class="${seg==='drawer'?'on':''}">서랍</button></div>`;
+  if(seg==='proj'){
+    const ps=Object.values(S.projects).sort((a,b)=>b.at-a.at);
+    return `${head}<p class="small muted" style="margin:12px 0">조각 모으기 → 초고 잇기 → 퇴고 → 투고 준비. 매일의 짧은 조각이 한 작품이 돼요.</p>
+      <div class="rows">${ps.map(projCardHTML).join('')||''}</div>${ps.length?'':`<div class="empty"><div class="big">아직 투고작이 없어요</div>공모전에 내 보고 싶은 작품 하나를 정해 보세요.</div>`}
+      <button class="btn block" data-newp style="margin-top:16px">새 투고작 프로젝트</button>`;
+  }
+  if(seg==='drawer') return head+inspHTML();
+  const ws=Object.values(S.writings).sort((a,b)=>b.updatedAt-a.updatedAt);
+  if(!ws.length) return `${head}<div class="empty"><div class="big">아직 쓴 글이 없어요</div>아래 + 버튼으로 첫 글을 시작해 보세요.</div>`;
+  let out='', last='';
+  ws.forEach(w=>{ const d=fmtFull(w.updatedAt); if(d!==last){ out+=`${last?'</div>':''}<h2>${d}</h2><div class="rows">`; last=d; } out+=writingRow(w); });
+  return head+out+'</div>';
+}
+function bindWriteList(v){
+  v.querySelectorAll('[data-wseg]').forEach(b=>b.onclick=()=>{ S.seg.write=b.dataset.wseg; S.selectMode=false; S.selected.clear(); render(); });
+  bindOpenRows(v);
+  const np=$('[data-newp]',v); if(np) np.onclick=newProjectSheet;
+  v.querySelectorAll('[data-proj]').forEach(b=>b.onclick=()=>{ S.sub='p:'+b.dataset.proj; render(); });
+  if((S.seg.write||'mine')==='mine'){ const f=$('#fab'); f.hidden=false; f.onclick=pickGenreThenNew; }
+  if(S.seg.write==='drawer') bindInsp(v);
+}
+function pickGenreThenNew(){ pickGenreFor(g=>newWriting({genre:g})); }
+function pickGenreFor(cb){
+  sheet(`<h3>어떤 글을 쓸까요?</h3><p class="small muted">장르마다 쓰기 도구가 달라요.</p><div class="rows" style="margin-top:8px">${Object.entries(GENRES).map(([k,g])=>`<button class="row-item" data-g="${k}"><div class="grow"><div class="t">${esc(g.name)}</div></div>${svgI('chev')}</button>`).join('')}</div>`,
+  (el,close)=>el.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{ close(); cb(b.dataset.g); }));
+}
+function inspHTML(){ return noEmoji(inspHTML_v1()).replace('6 · 소재·영감','소재·영감').replace('8 · 책 문구 수집','책 문구'); }
+function ideaHTML(i){ return noEmoji(ideaHTML_v1(i)); }
+function projectHTML(p){ return noEmoji(projectHTML_v1(p).replace(/✅/g,'<span class="ck on"></span>').replace(/⬜/g,'<span class="ck"></span>')); }
+function problemHTML(id){ return noEmoji(problemHTML_v1(id)).replace('<div class="task">','<div class="task-q">'); }
+function noEmoji(h){ return h.replace(/(?:[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{23F0}-\u{23FF}✍✏⬜✅]️?)\s?/gu,''); }
+
+/* ---------- 배우기 (경로) ---------- */
+function pathHTML(t){
+  const firstUndone=t.lessons.findIndex(l=>!S.profile.lessonsDone[l.id]);
+  return `<div class="path-course"><span class="eyebrow">${esc(t.course)}</span><h3>${esc(t.name)}</h3></div>
+  <div class="path">${t.lessons.map((l,i)=>{ const done=!!S.profile.lessonsDone[l.id]; return `<button class="node ${done?'done':''} ${i===firstUndone?'next':''}" data-lesson="${l.id}"><span class="dot"></span><span><span class="t">${esc(l.title)}</span><br><span class="m">${i+1}강 · 15분${done?' · 완료':i===firstUndone?' · 다음':''}</span></span></button>`; }).join('')}</div>`;
+}
+function trackHTML(t){ return pathHTML(t); }
+function learnHTML(){
+  const seg=S.seg.learn==='major'||S.seg.learn==='exam'?S.seg.learn:'basic';
+  const head=`<div class="seg"><button data-seg="basic" class="${seg==='basic'?'on':''}">기초</button><button data-seg="major" class="${seg==='major'?'on':''}">전공</button><button data-seg="exam" class="${seg==='exam'?'on':''}">서·논술</button></div>`;
+  if(seg==='basic') return head+`<p class="small muted" style="margin:14px 0 0">글쓰기를 처음 배우는 사람을 위한 핵심 배움. 위에서부터 하나씩.</p>`+pathHTML(BASICS);
+  if(seg==='major') return head+`<p class="small muted" style="margin:14px 0 0">문예창작과 전공 과목과 등단 준비 과정이에요.</p>`+COURSES.map(pathHTML).join('');
+  const mine=Object.values(S.writings).filter(w=>w.problemId);
+  return head+`<p class="small muted" style="margin:14px 0 0">서술형·논술형 수능을 가정한 연습이에요. 제한 시간 안에 쓰고, 채점 기준표로 피드백을 받아요.</p>
+    <h2>연습 문항</h2><div class="rows">${PROBLEMS.map(p=>{ const n=mine.filter(w=>w.problemId===p.id).length; return `<button class="row-item" data-prob="${p.id}"><div class="grow"><div class="t">${esc(p.title)}</div><div class="m">${esc(p.type)} · ${p.target}자 · ${p.min}분${n?` · ${n}번 풀었음`:''}</div></div>${svgI('chev')}</button>`; }).join('')}</div>
+    <button class="btn block" data-free style="margin-top:14px">내 문제로 연습하기</button>${pathHTML(ARG)}`;
+}
+function bindLearn(v){
+  v.querySelectorAll('[data-seg]').forEach(b=>b.onclick=()=>{ S.seg.learn=b.dataset.seg; render(); });
+  v.querySelectorAll('[data-lesson]').forEach(b=>b.onclick=()=>{ S.sub=b.dataset.lesson; render(); });
+  v.querySelectorAll('[data-prob]').forEach(b=>b.onclick=()=>{ S.sub=b.dataset.prob; render(); });
+  const f=$('[data-free]',v); if(f) f.onclick=()=>newWriting({genre:'argument'});
+}
+function lessonHTML(id){
+  const l=LESSON_MAP[id]; const done=!!S.profile.lessonsDone[id];
+  const linked=Object.values(S.writings).filter(w=>w.lessonId===id).sort((a,b)=>b.updatedAt-a.updatedAt);
+  return `<div class="lesson"><button class="back" data-back>${svgI('back')} ${esc(l.track.name)}</button>
+  <div class="eyebrow" style="margin-top:14px">${esc(l.track.name)} · ${l.idx+1}강 · 15분</div><h1>${esc(l.title)}</h1>
+  <p class="lead">${esc(l.concept)}</p>
+  <ol class="pts">${l.points.map(p=>`<li>${esc(p)}</li>`).join('')}</ol>
+  ${l.before||l.after?`<div class="ex">${l.before?`<div class="b"><small>이렇게 쓰기 쉬워요</small>${esc(l.before)}</div>`:''}${l.after?`<div class="a"><small>이렇게 바꿔 볼 수 있어요</small>${esc(l.after)}</div>`:''}</div>`:''}
+  <h2>과제</h2><div class="task-q">${esc(l.task)}</div>
+  <p class="small muted">공백 제외 ${l.min}자 이상 쓰면 자동으로 완료돼요.</p>
+  <button class="btn primary block" data-startl>과제 쓰기</button>
+  ${linked.length?`<h2>이 레슨에서 쓴 글</h2><div class="rows">${linked.map(writingRow).join('')}</div>`:''}
+  <button class="btn ghost block" data-done style="margin-top:10px">${done?'완료 표시 취소':'완료로 표시'}</button></div>`;
+}
+
+/* ---------- 에디터 (밑줄 코멘트형) ---------- */
+function refInfo(w){
+  const L=w.lessonId&&LESSON_MAP[w.lessonId], P=w.problemId&&PROBLEM_MAP[w.problemId];
+  if(P) return {k:P.type, t:P.question};
+  if(L) return {k:'레슨 과제', t:L.task};
+  if(w.prompt) return {k:'글감', t:w.prompt};
+  if(w.ref) return {k:'수집한 문구', t:w.ref.text};
+  return null;
+}
+function editorHTML(w){
+  const r=refInfo(w); const showTimer=w.genre==='argument'||w.timerMin;
+  return `<div class="ed-bar"><button class="ib" data-back aria-label="뒤로">${svgI('back')}</button>
+    <div class="mid">${esc(GENRES[w.genre]?.name||'자유')}${w.projectId&&S.projects[w.projectId]?` · ${esc(S.projects[w.projectId].title)}`:''}</div>
+    ${showTimer?`<button class="timer" data-timerbtn><span data-timer></span></button>`:''}
+    <button class="ib" data-more aria-label="더 보기">${svgI('more')}</button></div>
+  ${r?`<button class="ed-ref" data-refopen><b>${esc(r.k)}</b><span>${esc(r.t)}</span>${svgI('chev')}</button>`:''}
+  <input class="ed-title" data-title placeholder="제목" value="${esc(w.title)}">
+  <div class="ed-wrap"><div class="ed-back" data-backdrop aria-hidden="true"></div><textarea class="ed-body" data-body placeholder="여기에 당신의 문장을 쓰세요.">${esc(w.body)}</textarea></div>
+  <div data-area></div>`;
+}
+function edToolsHTML(w){
+  const nf=(w.feedbacks||[]).length, nc=(w.collab||[]).filter(t=>t.role==='ai').length;
+  return `<div class="in"><span class="cnt"><span data-count></span><span class="sv" data-saved>저장됨</span></span>
+    <button data-collab>${svgI('collab')}협동${nc?`<span class="badge">${nc}</span>`:''}</button>
+    <button data-stuck>${svgI('stuck')}막힘</button>
+    <button data-tool>${svgI('tools')}도구</button>
+    <button data-fbp class="acc">${svgI('fb')}피드백${nf?`<span class="badge">${nf}</span>`:''}</button></div>`;
+}
+function computeMarks(w, body){
+  const out=[]; if(S.marksOff) return out;
+  const add=(q,type,info)=>{ if(!q||q.length<2) return; const i=body.indexOf(q); if(i<0) return; if(out.some(m=>i<m.end&&i+q.length>m.start)) return; out.push({start:i,end:i+q.length,type,...info}); };
+  const fs=w.feedbacks||[]; const f=fs[S.fbIndex!=null&&S.fbFor===w.id?S.fbIndex:fs.length-1];
+  if(f){ const P=PERSONAS[f.persona]||{name:'AI'}; const d=f.data||{};
+    (d.improvements||[]).forEach(x=>add(x.quote,'fix',{label:`${P.name} · 다듬어 볼 곳`, text:x.issue, dir:x.direction}));
+    (d.strengths||[]).forEach(x=>add(x.quote,'good',{label:`${P.name} · 좋은 점`, text:x.why}));
+  }
+  const lastAi=[...(w.collab||[])].reverse().find(t=>t.role==='ai');
+  if(lastAi&&lastAi.focus) add(lastAi.focus,'ask',{label:`AI 동료 · ${lastAi.kind||'질문'}`, text:lastAi.text, dir:lastAi.next});
+  if(w.genre==='poem'){ ABSTRACT.forEach(a=>{ let i=-1; while((i=body.indexOf(a,i+1))>=0){ if(!out.some(m=>i<m.end&&i+a.length>m.start)) out.push({start:i,end:i+a.length,type:'abs',label:'관념어',text:`"${a}"처럼 감정을 직접 말하는 단어예요.`,dir:'이 감정이 보이는 장면이나 사물로 바꿔 볼까요?'}); } }); }
+  return out.sort((a,b)=>a.start-b.start);
+}
+function backdropHTML(body, marks, activeIdx){
+  let h='', p=0;
+  marks.forEach((m,i)=>{ h+=esc(body.slice(p,m.start))+`<mark class="${m.type}${i===activeIdx?' on':''}">${esc(body.slice(m.start,m.end))}</mark>`; p=m.end; });
+  return h+esc(body.slice(p))+'\n ';
+}
+function hideComment(){ const c=$('#edComment'); if(c){ c.hidden=true; c.innerHTML=''; } }
+function bindEditor(v,w){
+  w.meta=w.meta||{}; document.body.classList.add('editing');
+  const tools=$('#edTools'); tools.innerHTML=edToolsHTML(w); tools.hidden=false;
+  const title=$('[data-title]',v), body=$('[data-body]',v), back=$('[data-backdrop]',v), count=$('[data-count]',tools), saved=$('[data-saved]',tools);
+  let t=null, marks=[];
+  const upd=()=>{ count.textContent=`${charsNoSp(body.value).toLocaleString()}자`; };
+  const autosize=()=>{ body.style.height='auto'; body.style.height=body.scrollHeight+'px'; };
+  const paint=(active)=>{ marks=computeMarks(w, body.value); back.innerHTML=backdropHTML(body.value, marks, active); };
+  const commit=()=>{ clearTimeout(t); t=null;
+    if(w.title===title.value && (w._savedBody===undefined||w._savedBody===body.value) && !S.metaDirty){ w._savedBody=undefined; return Promise.resolve(); }
+    logChars(charsNoSp(body.value)-charsNoSp(w._savedBody??w.body)); w._savedBody=undefined;
+    S.metaDirty=false; w.title=title.value; w.body=body.value; w.updatedAt=Date.now(); markDay(); autoComplete(w);
+    saved.textContent='저장 중';
+    return Store.save('writings',w).then(()=>saved.textContent='저장됨').catch(()=>saved.textContent='저장 실패');
+  };
+  const sched=()=>{ saved.textContent='입력 중'; clearTimeout(t); t=setTimeout(commit,1200); };
+  S.editorCommit=commit; S.sched=sched; S.editorBody=body;
+  if(w._savedBody===undefined) w._savedBody=w.body;
+  title.oninput=sched;
+  body.oninput=()=>{ if(w._savedBody===undefined) w._savedBody=w.body; w.body=body.value; upd(); autosize(); paint(); hideComment(); sched(); };
+  const showAt=()=>{ const i=body.selectionStart; if(body.selectionEnd!==i) return hideComment();
+    const k=marks.findIndex(m=>i>=m.start&&i<=m.end); if(k<0){ hideComment(); paint(); return; }
+    const m=marks[k]; paint(k); const c=$('#edComment'); c.hidden=false;
+    c.innerHTML=`<div class="in"><div class="k ${m.type}"><span>${esc(m.label)}</span><button data-x class="small muted">닫기</button></div><p>${esc(m.text||'')}</p>${m.dir?`<div class="dir">${esc(m.dir)}</div>`:''}</div>`;
+    $('[data-x]',c).onclick=()=>{ hideComment(); paint(); };
+  };
+  body.addEventListener('click',showAt); body.addEventListener('keyup',e=>{ if(e.key.startsWith('Arrow')) showAt(); });
+  upd(); paint(); setTimeout(autosize,0); if(document.fonts) document.fonts.ready.then(()=>{ autosize(); paint(); });
+  $('[data-back]',v).onclick=()=>{ commit(); S.sub=null; render(); };
+  const ro=$('[data-refopen]',v); if(ro) ro.onclick=()=>openRefSheet(w);
+  $('[data-more]',v).onclick=()=>openMoreSheet(w,v);
+  $('[data-collab]',tools).onclick=()=>{ commit(); openCollabSheet(w,v); };
+  $('[data-stuck]',tools).onclick=()=>{ commit(); stuckHelp(w); };
+  $('[data-tool]',tools).onclick=()=>{ commit(); openToolsSheet(w,v); };
+  $('[data-fbp]',tools).onclick=()=>{ commit(); openFeedbackSheet(w,v); };
+  // 타이머
+  const tb=$('[data-timerbtn]',v);
+  if(tb){ const mins=w.timerMin||(w.problemId?PROBLEM_MAP[w.problemId].min:40);
+    const tick=()=>{ const el=$('[data-timer]',v); if(!el) return; const on=S.examEnd&&S.examFor===w.id; const left=on?Math.max(0,S.examEnd-Date.now()):mins*60e3;
+      el.textContent=on?`${String(Math.floor(left/60e3)).padStart(2,'0')}:${String(Math.floor(left%60e3/1e3)).padStart(2,'0')}`:`${mins}분 타이머`;
+      if(on&&left<=0){ S.examEnd=null; toast('시간 종료! 조건을 다시 확인해 보세요',4000); tick(); } };
+    tick(); S.timers.exam=setInterval(tick,1000);
+    tb.onclick=()=>{ if(S.examEnd&&S.examFor===w.id) S.examEnd=null; else { S.examEnd=Date.now()+mins*60e3; S.examFor=w.id; } tick(); };
+  }
+}
+function openRefSheet(w){
+  const L=w.lessonId&&LESSON_MAP[w.lessonId], P=w.problemId&&PROBLEM_MAP[w.problemId];
+  sheet(`<h3>참고</h3>
+    ${P?`<div class="ref"><b>${esc(P.type)} · ${esc(P.title)}</b><div class="passage">${esc(P.passage)}</div><div class="serif">${esc(P.question)}</div></div>`:''}
+    ${L?`<div class="ref"><b>레슨 과제 · ${esc(L.title)}</b><div class="serif">${esc(L.task)}</div></div>`:''}
+    ${w.prompt?`<div class="ref"><b>글감</b><div class="serif" style="white-space:pre-wrap">${esc(w.prompt)}</div></div>`:''}
+    ${w.ref?`<div class="ref"><b>수집한 문구${w.ref.source?' · '+esc(w.ref.source):''}</b><div class="q">${esc(w.ref.text)}</div></div>`:''}`);
+}
+function openMoreSheet(w,v){
+  sheet(`<h3>원고</h3>
+    <div class="field"><span>장르</span><div style="display:flex;flex-wrap:wrap;gap:6px">${Object.entries(GENRES).map(([k,g])=>`<button class="chip ${w.genre===k?'on':''}" data-genre="${k}">${esc(g.name)}</button>`).join('')}</div></div>
+    <div class="rows">
+      <button class="set-row" data-marks>본문 밑줄 표시<span>${S.marksOff?'꺼짐':'켜짐'}</span></button>
+      <button class="set-row" data-ver>퇴고 기록<span>${(w.versions||[]).length}개</span></button>
+      ${w.kind==='draft'?'':`<button class="set-row" data-toproj>투고작<span>${w.projectId&&S.projects[w.projectId]?esc(S.projects[w.projectId].title):'넣지 않음'}</span></button>`}
+      ${w.genre==='poem'&&w.projectId?`<button class="set-row" data-final>투고 묶음 완성작<span>${w.final?'표시됨':'표시 안 함'}</span></button>`:''}
+      <button class="set-row" data-del style="color:var(--fix)">이 글 삭제<span></span></button>
+    </div>`,
+  (el,close)=>{
+    el.querySelectorAll('[data-genre]').forEach(b=>b.onclick=()=>{ w.genre=b.dataset.genre; w.updatedAt=Date.now(); Store.save('writings',w); close(); render(); });
+    $('[data-marks]',el).onclick=()=>{ S.marksOff=!S.marksOff; close(); render(); };
+    $('[data-ver]',el).onclick=()=>{ close(); showVersions(w); };
+    const tp=$('[data-toproj]',el); if(tp) tp.onclick=()=>{ close(); projPicker(w); };
+    const fz=$('[data-final]',el); if(fz) fz.onclick=()=>{ w.final=!w.final; Store.save('writings',w); close(); toast(w.final?'투고 묶음의 완성작으로 표시했어요':'완성 표시를 뺐어요'); };
+    $('[data-del]',el).onclick=()=>{ close(); confirmSheet('이 글을 삭제할까요? 되돌릴 수 없어요.','삭제',()=>{ delete S.writings[w.id]; Store.del('writings',w.id); S.sub=null; render(); toast('삭제했어요'); }); };
+  });
+}
+function projPicker(w){
+  const ps=Object.values(S.projects).filter(p=>p.stage!=='ready');
+  sheet(`<h3>어느 투고작에 넣을까요?</h3><div class="rows">${ps.map(p=>`<button class="row-item" data-pp="${esc(p.id)}"><div class="grow"><div class="t">${esc(p.title)}</div><div class="m">${esc(GENRES[p.genre].name)}</div></div></button>`).join('')}</div>${ps.length?'':'<p class="small muted">아직 투고작 프로젝트가 없어요.</p>'}
+    ${w.projectId?'<button class="btn block" data-pp="" style="margin-top:12px">투고작에서 빼기</button>':''}<button class="btn primary block" data-newpp style="margin-top:8px">새 투고작 만들기</button>`,
+  (el,close)=>{ el.querySelectorAll('[data-pp]').forEach(b=>b.onclick=()=>{ w.projectId=b.dataset.pp; if(w.projectId) w.genre=S.projects[w.projectId].genre; Store.save('writings',w); close(); render(); toast(w.projectId?'투고작에 넣었어요':'투고작에서 뺐어요'); });
+    $('[data-newpp]',el).onclick=()=>{ close(); newProjectSheet(); }; });
+}
+function openToolsSheet(w,v){
+  const gt=genreToolsHTML(w);
+  sheet(`<h3>도구</h3>
+    <div style="display:flex;gap:8px;margin:10px 0 4px"><button class="btn block" data-rev style="height:42px">퇴고본 저장</button><button class="btn block" data-ver style="height:42px">퇴고 기록 ${(w.versions||[]).length}</button></div>
+    ${gt||'<p class="small muted" style="margin-top:12px">이 장르에는 추가 도구가 없어요. 장르를 바꾸려면 ⋯ 메뉴를 눌러 주세요.</p>'}`,
+  (el,close)=>{
+    $('[data-rev]',el).onclick=()=>{ const body=S.editorBody; if(!body.value.trim()) return toast('먼저 글을 써 주세요');
+      const last=(w.versions||[]).slice(-1)[0]; if(last&&last.body===body.value) return toast('지난 퇴고본과 같아요');
+      (w.versions||(w.versions=[])).push({at:Date.now(), body:body.value}); if(w.versions.length>15) w.versions.shift();
+      Store.save('writings',w); close(); toast(`퇴고본 ${w.versions.length}번째를 저장했어요`); };
+    $('[data-ver]',el).onclick=()=>{ close(); showVersions(w); };
+    el.querySelectorAll('[data-meta]').forEach(i=>i.oninput=()=>{ w.meta[i.dataset.meta]=i.value; S.metaDirty=true; if(['conds','target'].includes(i.dataset.meta)) genreLive(el,w); S.sched&&S.sched(); });
+    el.querySelectorAll('[data-ins]').forEach(b=>b.onclick=()=>{ const body=S.editorBody;
+      const n=(body.value.match(/^S#/gm)||[]).length+1; const txt={scene:`S#${n}. 장소 - 시간\n`, action:'(지문) ', line:'인물: '}[b.dataset.ins];
+      const s=body.selectionStart??body.value.length; const pre=body.value.slice(0,s); const lead=pre&&!pre.endsWith('\n')?'\n':'';
+      body.value=pre+lead+txt+body.value.slice(s); close(); const pos=(pre+lead+txt).length; body.focus(); body.setSelectionRange(pos,pos); body.oninput(); });
+    genreLive(el,w);
+  });
+}
+function collabTurnHTML(t){
+  if(t.role==='me') return `<div class="turn me"><div class="av">나</div><div class="bub"><div class="kind">${t.chars}자까지 쓰고 넘김</div><div class="serif" style="font-size:14px">${esc(t.excerpt)}</div></div></div>`;
+  return `<div class="turn"><div class="av">AI</div><div class="bub"><div class="kind">${esc(t.kind||'AI 동료')}</div>${t.focus?`<div class="quote">${esc(t.focus)}</div>`:''}<div>${esc(t.text)}</div>${t.next?`<div class="small" style="color:var(--accent);margin-top:4px">다음 턴 · ${esc(t.next)}</div>`:''}</div></div>`;
+}
+function openCollabSheet(w,v){
+  const cs=w.collab||[];
+  sheet(`<h3>협동 글쓰기</h3><p class="small muted">내가 쓰고 넘기면, AI 동료가 질문이나 방향을 하나 돌려줘요. 문장은 언제나 내가 씁니다.</p>
+    <div>${cs.length?cs.map(collabTurnHTML).join(''):'<div class="empty" style="padding:20px">아직 주고받은 턴이 없어요.</div>'}</div>
+    <button class="btn primary block" data-turn style="margin-top:10px">지금까지 쓴 부분 넘기기</button>`,
+  (el,close)=>{ const tb=$('[data-turn]',el); tb.onclick=async()=>{ const before=(w.collab||[]).length; close(); await collabTurn(w,v); if((w.collab||[]).length>before){ openCollabSheet(w,v); } };
+    setTimeout(()=>{ el.scrollTop=el.scrollHeight; },30); });
+}
+function feedbackHTML(f,open,idx,w){
+  const P=PERSONAS[f.persona]||{name:'AI'}, d=f.data||{};
+  const quote=q=>q?`<div class="quote">${esc(q)}</div>`:'';
+  return `<div class="fb"><button class="fb-head" data-toggle><span><b>${esc(P.name)}</b> <span class="small muted">· ${fmtTime(f.at)} · ${f.chars}자</span></span><span class="muted small">${open?'접기':'펼치기'}</span></button>
+  <div class="fb-body" ${open?'':'hidden'}>
+    ${d.summary?`<p class="serif" style="font-size:16px;margin:0">${esc(d.summary)}</p>`:''}
+    ${w?`<button class="link" data-show="${idx}" style="margin-top:10px">본문에 밑줄로 보기</button>`:''}
+    ${(d.questions||[]).length?`<div class="fb-sec q"><b>작가에게 묻는 질문</b><ol style="padding-left:18px;margin:0">${d.questions.map(q=>`<li style="margin:5px 0">${esc(q)}</li>`).join('')}</ol></div>`:''}
+    ${(d.strengths||[]).length?`<div class="fb-sec good"><b>좋은 점</b>${d.strengths.map(s=>`<div class="fb-item">${quote(s.quote)}<div>${esc(s.why)}</div></div>`).join('')}</div>`:''}
+    ${(d.improvements||[]).length?`<div class="fb-sec fix"><b>다듬어 볼 곳</b>${d.improvements.map(s=>`<div class="fb-item">${quote(s.quote)}<div>${esc(s.issue)}</div>${s.direction?`<div class="small" style="color:var(--fix);margin-top:2px">${esc(s.direction)}</div>`:''}</div>`).join('')}</div>`:''}
+    ${(d.rubric||[]).length?`<div class="fb-sec"><b>기준표</b><table class="rub">${d.rubric.map(r=>`<tr><td>${esc(r.item)}<div class="small muted">${esc(r.comment||'')}</div></td><td class="s">${esc(r.score)}/${esc(r.max||10)}</td></tr>`).join('')}</table><div class="small muted" style="margin-top:6px">연습용 추정 점수예요.</div></div>`:''}
+    ${d.growth?`<div class="fb-sec q"><b>지난 피드백 이후</b><div>${esc(d.growth)}</div></div>`:''}
+    ${d.mission?`<div class="mission"><b>다음 퇴고 미션</b>${esc(d.mission)}</div>`:''}
+  </div></div>`;
+}
+function openFeedbackSheet(w,v){
+  const order=PERSONA_ORDER[w.genre]||PERSONA_ORDER.free; const all=Object.keys(PERSONAS).filter(k=>k!=='grader'||w.genre==='argument');
+  const main=order.slice(0,3), rest=all.filter(k=>!main.includes(k));
+  const fs=w.feedbacks||[];
+  sheet(`<h3>작가 피드백</h3><p class="small muted">받은 피드백은 본문에 밑줄로 표시돼요. 밑줄을 누르면 코멘트가 나와요.</p>
+    <div class="rows" style="margin-top:6px">${main.map(k=>personaRow(k)).join('')}</div>
+    <div data-rest hidden><div class="rows">${rest.map(k=>personaRow(k)).join('')}</div></div>
+    ${rest.length?`<button class="link mute" data-morep style="margin:10px 0">다른 작가 ${rest.length}명 더 보기</button>`:''}
+    ${fs.length?`<h2>받은 피드백</h2>${fs.map((f,i)=>({f,i})).reverse().map(({f,i},n)=>feedbackHTML(f,n===0,i,w)).join('')}`:''}`,
+  (el,close)=>{
+    el.querySelectorAll('[data-p]').forEach(b=>b.onclick=async()=>{ if(charsNoSp(w.body)<20) return toast('피드백을 받으려면 조금 더 써 주세요 (20자 이상)'); close(); S.fbIndex=null;
+      const before=(w.feedbacks||[]).length; await runFeedback(w,b.dataset.p,v); if((w.feedbacks||[]).length>before) toast('밑줄을 눌러 코멘트를 보세요',3000); });
+    const mp=$('[data-morep]',el); if(mp) mp.onclick=()=>{ $('[data-rest]',el).hidden=false; mp.remove(); };
+    el.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{ const bd=b.nextElementSibling; bd.hidden=!bd.hidden; b.lastElementChild.textContent=bd.hidden?'펼치기':'접기'; });
+    el.querySelectorAll('[data-show]').forEach(b=>b.onclick=()=>{ S.fbIndex=+b.dataset.show; S.fbFor=w.id; S.marksOff=false; close(); render(); toast('본문의 밑줄을 눌러 보세요'); });
+  });
+}
+function personaRow(k){ const P=PERSONAS[k]; return `<button class="opt" data-p="${k}"><span class="mono">${esc(persMono(k))}</span><span style="flex:1"><b>${esc(P.name)}</b><span>${esc(P.desc)}</span></span>${svgI('chev')}</button>`; }
+function pickPersona(w,v){ openFeedbackSheet(w,v); }
+
+/* ---------- 나 ---------- */
+function weeklyChartHTML(){
+  const log=S.profile.log||{}; const weeks=[];
+  for(let w=7;w>=0;w--){ let sum=0; for(let i=0;i<7;i++){ const k=kstDate(-(w*7)-((kstDate().getUTCDay()+6)%7)+i).toISOString().slice(0,10); sum+=log[k]||0; } weeks.push(sum); }
+  const max=Math.max(1,...weeks);
+  return `<div class="chart">${weeks.map((n,i)=>`<div class="${i===7?'now':''}">${n?n.toLocaleString():''}<i style="height:${Math.max(2,n/max*70)}px"></i></div>`).join('')}</div>
+  <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px"><span>7주 전</span><span>이번 주</span></div>`;
+}
+const BADGE_GLYPH={'첫 글':'첫','3일 연속':'3','7일 연속':'7','주간 목표 달성':'주','첫 퇴고':'퇴','피드백 10회':'10','1만 자':'1만','5만 자':'5만','레슨 10개':'강','첫 투고작':'투','첫 초고':'초','투고 준비 완료':'완'};
+function badgesHTML(){ const b=badges(); return `<div class="badges">${b.map(([i,n,ok])=>`<div class="bd ${ok?'on':''}"><i>${BADGE_GLYPH[n]||n.slice(0,1)}</i>${esc(n)}</div>`).join('')}</div>`; }
+function styleHTML(){
+  const ws=Object.values(S.writings), eligible=ws.filter(w=>charsNoSp(w.body)>=150);
+  const revs=ws.reduce((a,w)=>a+(w.versions||[]).length,0), fbs=ws.reduce((a,w)=>a+(w.feedbacks||[]).length,0);
+  const hist=S.profile.styleHistory||[], cur=hist.slice(-1)[0], ob=S.profile.onboard;
+  const nb=badges().filter(x=>x[2]).length;
+  return `<div style="padding:20px 0 4px"><div class="eyebrow">${ob?esc(GOALS[ob.goal]||''):'목표 미설정'}</div><h1 style="font-size:26px;margin-top:4px">나의 기록</h1>
+    <div class="small muted" style="margin-top:4px">${ob?`${ob.genres.map(g=>GENRES[g].name).join(' · ')} · 하루 ${ob.minutes}분 · `:''}<button class="link" data-onb style="font-size:13px">목표 바꾸기</button></div></div>
+  ${weekDotsHTML()}
+  <div class="nums"><div><b>${ws.reduce((a,w)=>a+charsNoSp(w.body),0).toLocaleString()}</b><span>쓴 글자</span></div><div><b>${streak()}</b><span>연속 쓴 날</span></div><div><b>${revs}</b><span>퇴고</span></div></div>
+  <h2>주별로 쓴 글자</h2>${weeklyChartHTML()}
+  <h2>배지 ${nb}/${badges().length}</h2>${badgesHTML()}
+  <h2>나의 문체</h2>
+  <div data-area>${cur?noEmoji(styleCardHTML(cur)).replace('<div class="card">','<div>'):`<p class="small muted">150자 이상 쓴 글이 3편 모이면 문체를 분석할 수 있어요. (지금 ${eligible.length}편) 분석된 문체는 협동 글쓰기와 피드백에 반영돼요.</p>`}</div>
+  <button class="btn ${eligible.length>=3?'primary':''} block" data-analyze ${eligible.length>=3?'':'disabled'} style="margin-top:10px">${cur?'문체 다시 분석하기':'내 문체 분석하기'}</button>
+  ${hist.length>1?`<div class="small muted" style="margin-top:14px">지난 분석 · ${hist.slice(0,-1).reverse().map(h=>`${fmtDate(h.at)} ${esc((h.keywords||[]).slice(0,3).join('·'))}`).join(' / ')}</div>`:''}
+  <h2>설정</h2>
+  <div class="rows">
+    <button class="set-row" data-bk>백업 코드 복사<span>다른 기기·버전으로 옮기기</span></button>
+    ${IS_PAGES?'<button class="set-row" data-bkf>백업 파일로 저장<span>.txt</span></button>':''}
+    <button class="set-row" data-rs>백업 불러오기<span></span></button>
+    ${IS_PAGES&&S.installEvt?'<button class="set-row" data-inst>홈 화면에 설치<span></span></button>':''}
+    ${IS_PAGES?`<a class="set-row" href="${ARTIFACT_URL}" target="_blank" rel="noopener" style="text-decoration:none;color:var(--ink)">AI 기능이 있는 claude.ai 버전<span>열기</span></a>`:''}
+    <button class="set-row" data-about>뭉작가 소개 · 제작 개요<span></span></button>
+  </div>
+  <p class="small muted" style="margin-top:14px">${Store.mode==='db'?'claude.ai 계정에 저장되고 있어요.':'이 기기(브라우저)에 저장되고 있어요. 가끔 백업해 두세요.'}${IS_PAGES?' 홈 화면 추가: 크롬 ⋮ → 홈 화면에 추가 / 아이폰 사파리 공유 → 홈 화면에 추가.':''}</p>`;
+}
+function aboutHTML(){
+  const rows=[['Sudowrite','소설 특화 AI. 초고 생성, 장면 확장, 원고를 읽는 피드백 채팅','유료 전용, 영어 중심, 문장 생성 위주'],['ProWritingAid','문법·스타일 교정, 글쓰기 리포트, 구조 피드백','영어 중심, 교정·분석 위주'],['iA Writer · Ulysses','여백과 타이포 중심의 집중형 에디터','AI 합평·학습 기능 없음'],['국내 AI 글쓰기 도우미류','글 생성, 재작성, 맞춤법 교정','대신 써 주기 중심, 창작 학습 구조 없음']];
+  return `<button class="back" data-back>${svgI('back')} 나의 기록</button>
+  <div style="padding:14px 0"><div class="eyebrow">글쓰기 창작 어플</div><h1 style="font-size:28px;margin-top:4px">뭉작가</h1><p class="serif" style="font-size:16px;line-height:1.8;margin:10px 0 0">AI가 대신 쓰지 않는, 나만의 문체를 짓는 글쓰기 학교. AI는 질문하고, 문장은 당신이 씁니다.</p></div>
+  <h2>제작 개요</h2><div class="rows" style="border-top:0">${OVERVIEW.map(o=>`<div class="ov"><span class="no">${esc(o.no)}</span><div><div class="q">${esc(o.memo)}</div><div class="a">${esc(o.label)} — ${esc(o.sub)}</div></div></div>`).join('')}</div>
+  <h2>덧붙인 기능</h2><div>${EXTRAS.map(o=>`<div class="ov"><span class="no">·</span><div><div class="q">${esc(o.label)}</div><div class="a">${esc(o.sub)}</div></div></div>`).join('')}</div>
+  <h2>벤치마크 (2026년 11월 기준)</h2><table class="bm"><tr><th>앱</th><th>주요 기능</th><th>한계</th></tr>${rows.map(r=>`<tr><td><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join('')}</table>
+  <p class="small muted">뭉작가는 iA Writer의 여백, Sudowrite의 패널형 AI, ProWritingAid의 본문 밑줄 코멘트를 참고해, 대신 쓰지 않는 한국어 창작 학습 앱으로 만들었어요.</p>`;
+}
+function bindStyle(v){
+  $('[data-onb]',v).onclick=()=>showOnboarding(true);
+  const ab=$('[data-about]',v); if(ab) ab.onclick=()=>{ S.sub='about'; render(); };
+  bindAppTools(v);
+  bindStyle_v1(v);
+}
+
+/* ============ 시작 ============ */
+(async function start(){
+  await Store.init(); await Store.load();
+  { const sc=$('#storeChip'); sc.textContent = Store.mode==='db'?'계정에 저장':Store.mode==='local'?(Store.failed?'이 기기에 임시 저장':'이 기기에 저장'):'저장 안 됨'; sc.classList.toggle('warn', Store.mode!=='db'&&(!!Store.failed||Store.mode==='memory')); }
+  S.tab=null; route(); getAI();
+  if(!S.profile.onboard) setTimeout(()=>showOnboarding(),300);
+  document.addEventListener('visibilitychange',()=>{ if(document.hidden&&S.editorCommit&&S.tab==='write'&&S.sub) S.editorCommit(); });
+})();
+
+</script>
+</body>
+</html>
