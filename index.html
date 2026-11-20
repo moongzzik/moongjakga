@@ -1391,7 +1391,12 @@ function backdropHTML(body, marks, activeIdx){
   marks.forEach((m,i)=>{ h+=esc(body.slice(p,m.start))+`<mark class="${m.type}${i===activeIdx?' on':''}">${esc(body.slice(m.start,m.end))}</mark>`; p=m.end; });
   return h+esc(body.slice(p))+'\n ';
 }
-function hideComment(){ const c=$('#edComment'); if(c){ c.hidden=true; c.innerHTML=''; } }
+function hideComment(){ const c=$('#edComment'); if(c){ c.hidden=true; c.innerHTML=''; c.style.bottom=''; } }
+// [추가] 키보드가 올라와 있으면 밑줄 코멘트 카드를 키보드 바로 위로 올림
+function placeComment(){ const c=$('#edComment'); if(!c||c.hidden) return; const vv=window.visualViewport;
+  const kb=vv?Math.max(0,window.innerHeight-(vv.height+vv.offsetTop)):0;
+  c.style.bottom=kb>80?`${kb+8}px`:''; }
+if(window.visualViewport){ visualViewport.addEventListener('resize',placeComment); visualViewport.addEventListener('scroll',placeComment); }
 function bindEditor(v,w){
   w.meta=w.meta||{}; document.body.classList.add('editing');
   const tools=$('#edTools'); tools.innerHTML=edToolsHTML(w); tools.hidden=false;
@@ -1412,12 +1417,27 @@ function bindEditor(v,w){
   if(w._savedBody===undefined) w._savedBody=w.body;
   title.oninput=sched;
   body.oninput=()=>{ if(w._savedBody===undefined) w._savedBody=w.body; w.body=body.value; upd(); autosize(); paint(); hideComment(); sched(); };
-  const showAt=()=>{ const i=body.selectionStart; if(body.selectionEnd!==i) return hideComment();
-    const k=marks.findIndex(m=>i>=m.start&&i<=m.end); if(k<0){ hideComment(); paint(); return; }
-    const m=marks[k]; paint(k); const c=$('#edComment'); c.hidden=false;
-    c.innerHTML=`<div class="in"><div class="k ${m.type}"><span>${esc(m.label)}</span><button data-x class="small muted">닫기</button></div><p>${esc(m.text||'')}</p>${m.dir?`<div class="dir">${esc(m.dir)}</div>`:''}</div>`;
+  // [수정] 카드 그리기를 따로 떼어, 키보드 없이 밑줄을 눌렀을 때도 쓸 수 있게 함
+  const showMark=(k,typing)=>{ const m=marks[k]; paint(k); const c=$('#edComment'); c.hidden=false;
+    c.innerHTML=`<div class="in"><div class="k ${m.type}"><span>${esc(m.label)}</span><span style="display:flex;gap:14px">${typing?'':'<button data-edit class="small" style="color:var(--accent);font-weight:700">여기 고치기</button>'}<button data-x class="small muted">닫기</button></span></div><p>${esc(m.text||'')}</p>${m.dir?`<div class="dir">${esc(m.dir)}</div>`:''}</div>`;
     $('[data-x]',c).onclick=()=>{ hideComment(); paint(); };
+    const ed=$('[data-edit]',c); if(ed) ed.onclick=()=>{ body.focus({preventScroll:true}); body.setSelectionRange(m.end,m.end); placeComment(); };
+    placeComment();
   };
+  const showAt=()=>{ if(document.activeElement!==body) return; const i=body.selectionStart; if(body.selectionEnd!==i) return hideComment();
+    const k=marks.findIndex(m=>i>=m.start&&i<=m.end); if(k<0){ hideComment(); paint(); return; }
+    showMark(k,true);
+  };
+  // [추가] 키보드가 내려가 있을 때 밑줄을 톡 누르면: 키보드를 띄우지 않고 피드백만 보여 줌
+  const markAt=(x,y)=>{ const els=[...back.querySelectorAll('mark')];
+    return els.findIndex(el=>[...el.getClientRects()].some(r=>x>=r.left-2&&x<=r.right+2&&y>=r.top-4&&y<=r.bottom+4)); };
+  let tStart=null;
+  body.addEventListener('touchstart',e=>{ const t=e.touches[0]; tStart=(e.touches.length===1&&document.activeElement!==body)?{x:t.clientX,y:t.clientY,at:Date.now()}:null; },{passive:true});
+  body.addEventListener('touchend',e=>{ if(!tStart) return; const t=e.changedTouches[0], st=tStart; tStart=null;
+    if(Math.abs(t.clientX-st.x)>10||Math.abs(t.clientY-st.y)>10||Date.now()-st.at>500) return;
+    const k=markAt(t.clientX,t.clientY); if(k<0||!marks[k]) return;
+    e.preventDefault(); showMark(k,false); });
+  body.addEventListener('mousedown',e=>{ if(document.activeElement===body) return; const k=markAt(e.clientX,e.clientY); if(k<0||!marks[k]) return; e.preventDefault(); showMark(k,false); });
   body.addEventListener('click',showAt); body.addEventListener('keyup',e=>{ if(e.key.startsWith('Arrow')) showAt(); });
   upd(); paint(); setTimeout(autosize,0); if(document.fonts) document.fonts.ready.then(()=>{ autosize(); paint(); });
   $('[data-back]',v).onclick=()=>{ commit(); S.sub=null; render(); };
