@@ -326,6 +326,7 @@ body:not(.editing) .ai-panel{bottom:calc(var(--safe-b) + 74px)}
 .aic .t .dot{width:8px;height:8px;border-radius:50%;background:var(--good);display:inline-block}
 .aic .m{font-size:12.5px;color:var(--muted);margin-top:2px}
 .aic .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.aic .usage{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line2)} .aic .usage .row{display:flex;justify-content:space-between;font-size:13.5px} .aic .usage .row b{font-variant-numeric:tabular-nums}
 details summary{list-style:none} details summary::-webkit-details-marker{display:none}
 
 
@@ -1662,6 +1663,7 @@ function aiErrorMsg(e){
   const c=e&&e.code;
   // [수정] 예전에 두 번 덧씌우던 오류 문구(설치형 앱 키·재시도)를 한 함수로 합침. 순서 유지.
   if(c==='busy') return 'AI 서버가 지금 많이 바빠요. 세 번 다시 시도하고 예비 모델로도 해 봤지만 안 됐어요. 1~2분 뒤 다시 눌러 주세요.';
+  if(c==='budget'){ const b=budgetGet(), u=usageGet(); return `이번 달 AI 사용 상한(약 $${b.usd.toFixed(2)})에 닿아서 멈췄어요. 지금까지 약 $${u.usd.toFixed(2)}. 나 → AI 연결 → 상한 바꾸기에서 올리거나, 다음 달 1일까지 기다려 주세요.`; } // [추가]
   if(c==='quota_day') return '오늘 쓸 수 있는 무료 한도를 다 썼어요. 내일 다시 쓰거나, 나 → AI 연결에서 Claude로 바꿔 주세요.';
   if(c==='offline') return '인터넷이 끊겨 있어요. 와이파이나 데이터를 켠 뒤 다시 눌러 주세요.';
   if(c==='network') return AI_HIDDEN_DURING?'답을 기다리는 동안 다른 앱으로 넘어가서 연결이 끊겼어요. 답이 올 때까지 이 화면을 켜 두세요.':'인터넷 연결이 불안정해서 끊겼어요. 다시 눌러 주세요.';
@@ -1691,10 +1693,10 @@ function showAiError(e){
   const carry=e&&e.code==='no_ai'&&IS_PAGES&&w;
   aiPanel(`<div class="k err"><span>AI 도움을 받지 못했어요</span><button data-aix class="small muted">닫기</button></div>
     <p>${esc(aiErrorMsg(e))}</p>
-    ${e&&['no_ai','bad_key','bad_model','no_credit'].includes(e.code)&&IS_PAGES?`<button class="btn primary block" data-byok2 style="margin-top:10px">AI 연결 설정 (구글·Claude 키)</button>`:''}
+    ${e&&['no_ai','bad_key','bad_model','no_credit','budget'].includes(e.code)&&IS_PAGES?`<button class="btn primary block" data-byok2 style="margin-top:10px">${e.code==='budget'?'상한 바꾸기':'AI 연결 설정 (구글·Claude 키)'}</button>`:''}
     ${carry?`<a class="btn ${IS_PAGES?'':'primary'} block" data-carry href="${ARTIFACT_URL}" target="_blank" rel="noopener" style="text-decoration:none;margin-top:10px">또는 이 글 가지고 claude.ai로 가기</a>
       <p class="small muted" style="margin:8px 0 0">글이 복사돼요. claude.ai 뭉작가 → 나 → <b>백업 불러오기</b>에 붙여 넣으면 이 글이 그대로 열려요.</p>`:''}`);
-  const bz=$('#aiPanel [data-byok2]'); if(bz) bz.onclick=()=>{ aiPanel(null); byokSheet(); };
+  const bz=$('#aiPanel [data-byok2]'); if(bz) bz.onclick=()=>{ aiPanel(null); if(e&&e.code==='budget') budgetSheet(); else byokSheet(); }; // [수정] 상한이면 상한 화면으로
   const a=$('#aiPanel [data-carry]'); if(a) a.addEventListener('click',()=>{ copyText(carryCode(w)).then(ok=>toast(ok?'글을 복사했어요':'복사 실패: 나 → 백업 코드 복사를 써 주세요')); });
 }
 async function askAIRun(prompt, opts={}){ // [수정] 실제 호출. 화면 켜 두기·재시도 안내는 아래 askAI가 감쌈
@@ -1757,13 +1759,21 @@ function byokStatusHTML(){
   const other=c.provider==='gemini'?'claude':'gemini';
   return `<div class="aic"><div><div class="t"><i class="dot"></i>${c.provider==='gemini'?'Gemini (구글)':'Claude'} 연결됨</div>
     <div class="m">키 ${esc(maskKey(c.key))} · 모델 ${esc(c.model||BYOK_DEF[c.provider])}</div></div>
-    <div class="acts"><button class="btn sm" data-byok-open="${c.provider}">키 바꾸기</button><button class="btn sm" data-byok-open="${other}">${other==='gemini'?'Gemini로':'Claude로'} 바꾸기</button><button class="btn sm ghost" data-byok-off>연결 끊기</button></div></div>`;
+    <div class="acts"><button class="btn sm" data-byok-open="${c.provider}">키 바꾸기</button><button class="btn sm" data-byok-open="${other}">${other==='gemini'?'Gemini로':'Claude로'} 바꾸기</button><button class="btn sm ghost" data-byok-off>연결 끊기</button></div>
+    ${(()=>{ const u=usageGet(), b=budgetGet(); const pct=b.on?Math.min(100,Math.round(u.usd/b.usd*100)):0; // [추가] 이번 달 사용량·상한·잠금
+      return `<div class="usage"><div class="row"><span>이번 달 사용 (추정)</span><b>$${u.usd.toFixed(2)}${b.on?` / $${b.usd.toFixed(2)}`:''}</b></div>
+      ${b.on?`<div class="prog"><i style="width:${pct}%;${pct>=80?'background:var(--fix)':''}"></i></div>`:''}
+      <div class="m">Claude ${u.calls}번${u.gCalls?` · Gemini ${u.gCalls}번`:''} · ${b.on?'상한에 닿으면 자동으로 멈춰요':'상한 꺼짐'}</div>
+      <div class="acts"><button class="btn sm" data-budget>상한 바꾸기</button><button class="btn sm" data-pin>${pinOn()?'잠금 바꾸기':'잠금 설정'}</button></div></div>`; })()}</div>`;
 }
 function bindByokStatus(root){
   root.querySelectorAll('[data-byok-open]').forEach(b=>b.onclick=()=>byokSheet(b.dataset.byokOpen));
-  const off=$('[data-byok-off]',root); if(off) off.onclick=()=>confirmSheet('AI 연결을 끊을까요? 이 폰에 저장된 키가 지워져요.','연결 끊기',()=>{ byokSet(null); toast('AI 연결을 끊었어요'); render(); });
+  const bg=$('[data-budget]',root); if(bg) bg.onclick=budgetSheet; // [추가]
+  const pn=$('[data-pin]',root); if(pn) pn.onclick=pinSetupSheet; // [추가]
+  const off=$('[data-byok-off]',root); if(off) off.onclick=()=>{ if(pinLocked()) return askPin(()=>off.onclick()); confirmSheet('AI 연결을 끊을까요? 이 폰에 저장된 키가 지워져요.','연결 끊기',()=>{ byokSet(null); toast('AI 연결을 끊었어요'); render(); }); };
 }
 function byokSheet(provArg){
+  if(pinLocked()) return askPin(()=>byokSheet(provArg)); // [추가] 잠금
   const cur=byokGet(); let prov=provArg||(cur&&cur.provider)||'gemini';
   const draw=(el,close)=>{
     const g=prov==='gemini'; const same=cur&&cur.key&&cur.provider===prov;
@@ -1825,11 +1835,67 @@ async function readSSE(res, onData, idleMs, ctl){
       let i; while((i=buf.indexOf('\n'))>=0){ const line=buf.slice(0,i).replace(/\r$/,''); buf=buf.slice(i+1); if(line.startsWith('data:')){ const d=line.slice(5).trim(); if(d&&d!=='[DONE]'){ try{ onData(JSON.parse(d)); }catch(e){ if(e&&e.code) throw e; } } } } }
   } finally { clearTimeout(timer); }
 }
+// [추가] 안전장치 1: 이번 달 사용 금액 추정과 상한 (설치형 앱의 내 키 전용)
+const PRICE_PER_M={'claude-opus-5-5':[4,20],'claude-sonnet-5-5':[2,10],'claude-haiku-5-5':[0.10,0.50]}; // 달러/100만 토큰(입력, 출력)
+function monthKey(){ return new Date(Date.now()+9*3600e3).toISOString().slice(0,7); }
+function usageGet(){ let u=null; try{ u=JSON.parse(localStorage.getItem('mjk.usage')||'null'); }catch(_){}
+  if(!u||u.month!==monthKey()) u={month:monthKey(), usd:0, tokIn:0, tokOut:0, calls:0, gTok:0, gCalls:0, warned:false}; return u; }
+function usageAdd(prov, model, tin, tout){
+  const u=usageGet();
+  if(prov==='claude'){ const pr=PRICE_PER_M[model]||PRICE_PER_M['claude-sonnet-5-5']; u.usd+=(tin*pr[0]+tout*pr[1])/1e6; u.tokIn+=tin; u.tokOut+=tout; u.calls++; }
+  else { u.gTok+=tin+tout; u.gCalls++; }
+  try{ localStorage.setItem('mjk.usage',JSON.stringify(u)); }catch(_){}
+  const b=budgetGet();
+  if(prov==='claude'&&b.on&&!u.warned&&u.usd>=b.usd*0.8){ u.warned=true; try{ localStorage.setItem('mjk.usage',JSON.stringify(u)); }catch(_){} setTimeout(()=>toast(`이번 달 AI 사용이 상한의 80%예요 (약 $${u.usd.toFixed(2)} / $${b.usd.toFixed(2)})`,4500),300); }
+}
+function budgetGet(){ try{ const b=JSON.parse(localStorage.getItem('mjk.budget')||'null'); if(b&&typeof b.usd==='number') return b; }catch(_){} return {on:true, usd:3}; }
+function budgetSet(b){ try{ localStorage.setItem('mjk.budget',JSON.stringify(b)); }catch(_){} }
+function budgetSheet(){
+  if(pinLocked()) return askPin(budgetSheet);
+  const b=budgetGet(), u=usageGet();
+  sheet(`<h3>한 달 사용 상한</h3><p class="small muted">Claude 키로 쓴 금액을 앱이 대략 세다가, 상한에 닿으면 이번 달 AI 요청을 멈춰요. 매달 1일에 다시 0부터 세요. 실제 청구 금액은 platform.claude.com의 Usage 화면이 정확해요.</p>
+    <div class="note">이번 달: 약 <b>$${u.usd.toFixed(2)}</b> · Claude ${u.calls}번${u.gCalls?` · Gemini ${u.gCalls}번(무료 등급은 0원으로 셈)`:''}</div>
+    <label class="field"><span>상한 (달러)</span><input data-usd type="number" inputmode="decimal" min="0.5" step="0.5" value="${b.usd}"></label>
+    <label style="display:flex;gap:10px;align-items:center;margin:6px 0 14px"><input type="checkbox" data-on ${b.on?'checked':''} style="width:20px;height:20px"> 상한 사용하기 (끄면 충전 잔액까지 계속 써요)</label>
+    <button class="btn primary block" data-ok>저장</button>`,
+  (el,close)=>{ $('[data-ok]',el).onclick=()=>{ const v=Math.max(0.5,parseFloat($('[data-usd]',el).value)||3); budgetSet({on:$('[data-on]',el).checked, usd:Math.round(v*100)/100}); const u2=usageGet(); u2.warned=u2.usd>=v*0.8; try{ localStorage.setItem('mjk.usage',JSON.stringify(u2)); }catch(_){} close(); toast('상한을 저장했어요'); render(); }; });
+}
+// [추가] 안전장치 2: AI 연결 화면 잠금(4자리 PIN). 키 보기·바꾸기·끊기·상한 바꾸기 전에 물어봄
+async function pinHash(pin){ const t='mjk-pin:'+pin; try{ const d=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)); return [...new Uint8Array(d)].map(x=>x.toString(16).padStart(2,'0')).join(''); }catch(_){ let h=0; for(const ch of t) h=(h*31+ch.charCodeAt(0))|0; return 'x'+h; } }
+function pinOn(){ try{ return !!localStorage.getItem('mjk.pin'); }catch(_){ return false; } }
+function pinLocked(){ return pinOn()&&!(S.pinOkUntil>Date.now()); }
+function askPin(onOk){
+  sheet(`<h3>잠금 해제</h3><p class="small muted">AI 연결 화면은 비밀번호로 잠겨 있어요.</p>
+    <label class="field"><span>4자리 비밀번호</span><input data-pin type="password" inputmode="numeric" maxlength="4" autocomplete="off" style="font-size:22px;letter-spacing:10px;text-align:center"></label>
+    <div data-msg class="small" style="color:var(--fix);min-height:20px"></div>
+    <button class="btn primary block" data-ok>확인</button>
+    <button class="btn ghost block" data-forgot style="margin-top:6px">비밀번호를 잊었어요</button>`,
+  (el,close)=>{ const i=$('[data-pin]',el); setTimeout(()=>i.focus(),50);
+    const go=async()=>{ let stored=''; try{ stored=localStorage.getItem('mjk.pin')||''; }catch(_){}
+      if(await pinHash(i.value)===stored){ S.pinOkUntil=Date.now()+5*60e3; close(); onOk(); } else { $('[data-msg]',el).textContent='비밀번호가 달라요'; i.value=''; } };
+    $('[data-ok]',el).onclick=go; i.oninput=()=>{ if(i.value.length===4) go(); }; i.onkeydown=e=>{ if(e.key==='Enter') go(); }; // [수정] 폰 키보드는 keyup이 안 올 때가 있어 input으로
+    $('[data-forgot]',el).onclick=()=>{ close(); confirmSheet('잠금을 풀려면 저장된 API 키도 함께 지워야 해요. 지울까요? (키는 platform.claude.com이나 구글에서 새로 만들 수 있어요)','키 지우고 잠금 풀기',()=>{ byokSet(null); try{ localStorage.removeItem('mjk.pin'); }catch(_){} toast('키와 잠금을 지웠어요'); render(); }); };
+  });
+}
+function pinSetupSheet(){
+  if(pinLocked()) return askPin(pinSetupSheet);
+  sheet(`<h3>${pinOn()?'잠금 비밀번호 바꾸기':'AI 연결 잠그기'}</h3><p class="small muted">키를 보거나 바꾸거나 상한을 바꿀 때 이 비밀번호를 물어요. 한 번 풀면 5분 동안은 다시 묻지 않아요.</p>
+    <label class="field"><span>새 4자리 비밀번호</span><input data-p1 type="password" inputmode="numeric" maxlength="4" autocomplete="off" style="font-size:22px;letter-spacing:10px;text-align:center"></label>
+    <label class="field"><span>한 번 더</span><input data-p2 type="password" inputmode="numeric" maxlength="4" autocomplete="off" style="font-size:22px;letter-spacing:10px;text-align:center"></label>
+    <div data-msg class="small" style="color:var(--fix);min-height:20px"></div>
+    <button class="btn primary block" data-ok>저장</button>${pinOn()?'<button class="btn ghost block" data-off style="margin-top:6px">잠금 끄기</button>':''}`,
+  (el,close)=>{ $('[data-ok]',el).onclick=async()=>{ const a=$('[data-p1]',el).value, b=$('[data-p2]',el).value;
+      if(!/^\d{4}$/.test(a)) return $('[data-msg]',el).textContent='숫자 4자리로 넣어 주세요';
+      if(a!==b) return $('[data-msg]',el).textContent='두 번 넣은 숫자가 달라요';
+      try{ localStorage.setItem('mjk.pin',await pinHash(a)); }catch(_){} S.pinOkUntil=Date.now()+5*60e3; close(); toast('AI 연결을 잠갔어요'); render(); };
+    const off=$('[data-off]',el); if(off) off.onclick=()=>{ try{ localStorage.removeItem('mjk.pin'); }catch(_){} close(); toast('잠금을 껐어요'); render(); }; });
+}
+
 function byokAdapter(cfg){
   const once=async(prompt,o,model,imgs)=>{
     const text=prompt+'\n\n(반드시 JSON만 출력하세요.)';
     const ctl=new AbortController(); const outer=o.signal; const onAbort=()=>ctl.abort(); if(outer){ if(outer.aborted) throw {code:'cancelled'}; outer.addEventListener('abort',onAbort); }
-    let out='', res;
+    let out='', res; let tin=0, tout=0; // [추가] 사용량(토큰)
     try{
       if(cfg.provider==='gemini'){
         res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`,{method:'POST',signal:ctl.signal,
@@ -1837,7 +1903,7 @@ function byokAdapter(cfg){
           body:JSON.stringify({contents:[{role:'user',parts:[...imgs.map(i=>({inline_data:{mime_type:i.type,data:i.data}})),{text}]}],generationConfig:{responseMimeType:'application/json',maxOutputTokens:16384}})});
         if(!res.ok){ let j=null; try{ j=await res.json(); }catch(_){ } throw classify(res.status,Array.isArray(j)?j[0]:j); }
         let finish='';
-        await readSSE(res,d=>{ if(d.error) throw classify(d.error.code||500,{error:d.error}); const c=(d.candidates||[])[0]; if(!c) return; if(c.finishReason) finish=c.finishReason;
+        await readSSE(res,d=>{ if(d.error) throw classify(d.error.code||500,{error:d.error}); if(d.usageMetadata){ tin=d.usageMetadata.promptTokenCount||tin; tout=(d.usageMetadata.candidatesTokenCount||0)+(d.usageMetadata.thoughtsTokenCount||0)||tout; } const c=(d.candidates||[])[0]; if(!c) return; if(c.finishReason) finish=c.finishReason;
           const add=((c.content&&c.content.parts)||[]).filter(p=>!p.thought).map(p=>p.text||'').join(''); if(add){ out+=add; o.onText&&o.onText({text:out,delta:add}); } }, 100000, ctl);
         if(!out.trim()&&finish==='SAFETY') throw {code:'refused'};
       } else {
@@ -1846,6 +1912,8 @@ function byokAdapter(cfg){
           body:JSON.stringify({model,max_tokens:4096,stream:true,messages:[{role:'user',content:[...imgs.map(i=>({type:'image',source:{type:'base64',media_type:i.type,data:i.data}})),{type:'text',text}]}]})});
         if(!res.ok){ let j=null; try{ j=await res.json(); }catch(_){ } throw classify(res.status,j); }
         await readSSE(res,d=>{ if(d.type==='error') throw classify(d.error&&d.error.type==='overloaded_error'?529:500,{error:d.error});
+          if(d.type==='message_start'&&d.message&&d.message.usage){ tin=(d.message.usage.input_tokens||0)+(d.message.usage.cache_creation_input_tokens||0)+(d.message.usage.cache_read_input_tokens||0); tout=d.message.usage.output_tokens||0; }
+          if(d.type==='message_delta'&&d.usage&&d.usage.output_tokens) tout=d.usage.output_tokens;
           if(d.type==='content_block_delta'&&d.delta&&d.delta.type==='text_delta'){ out+=d.delta.text; o.onText&&o.onText({text:out,delta:d.delta.text}); } }, 100000, ctl);
       }
     }catch(e){
@@ -1854,7 +1922,7 @@ function byokAdapter(cfg){
       if(ctl.idle) throw {code:'busy',message:'응답이 오래 멈춰서 다시 시도'};
       if(!navigator.onLine) throw {code:'offline',message:'오프라인'};
       throw {code:'network',message:String(e&&e.message||e)};
-    } finally { if(outer) outer.removeEventListener('abort',onAbort); }
+    } finally { if(outer) outer.removeEventListener('abort',onAbort); if(tin||tout) usageAdd(cfg.provider, model, tin, tout||Math.ceil(out.length/1.5)); } // [추가] 받은 만큼 기록
     if(!out.trim()) throw {code:'empty_completion'};
     return out;
   };
@@ -1864,6 +1932,7 @@ function byokAdapter(cfg){
     const main=(cfg.model&&cfg.model.trim())||(tier==='quick'?BYOK_QUICK:BYOK_DEF)[cfg.provider];
     const fb=BYOK_FALLBACK[cfg.provider];
     const delays=[1500,4000,8000];
+    { const b=budgetGet(), u=usageGet(); if(cfg.provider==='claude'&&b.on&&u.usd>=b.usd) throw {code:'budget'}; } // [추가] 한 달 상한
     for(let i=0;;i++){
       const model=(i>=2&&fb&&fb!==main)?fb:main;
       try{ const out=await once(prompt,o,model,imgs); S.aiRetry=0; return {text:out,truncated:false,model}; }
