@@ -1598,7 +1598,8 @@ function styleHTML(){
     ${IS_PAGES?`<a class="set-row" href="${ARTIFACT_URL}" target="_blank" rel="noopener" style="text-decoration:none;color:var(--ink)">AI 기능이 있는 claude.ai 버전<span>열기</span></a>`:''}
     <button class="set-row" data-about>뭉작가 소개 · 제작 개요<span></span></button>
   </div>
-  <p class="small muted" style="margin-top:14px">${Store.mode==='db'?'claude.ai 계정에 저장되고 있어요.':'이 기기(브라우저)에 저장되고 있어요. 가끔 백업해 두세요.'}${IS_PAGES?' 홈 화면 추가: 크롬 ⋮ → 홈 화면에 추가 / 아이폰 사파리 공유 → 홈 화면에 추가.':''}</p>`;
+  <p class="small muted" style="margin-top:14px">${Store.mode==='db'?'claude.ai 계정에 저장되고 있어요.':'이 기기(브라우저)에 저장되고 있어요. 가끔 백업해 두세요.'}${IS_PAGES?' 홈 화면 추가: 크롬 ⋮ → 홈 화면에 추가 / 아이폰 사파리 공유 → 홈 화면에 추가.':''}</p>
+  <p class="small muted" style="margin-top:10px;text-align:center;opacity:.8">© 2026 은지쌤(moongzzik) · 무단 복제·수정·배포 및 상업적 이용 금지</p>`;
 }
 function aboutHTML(){
   const rows=[['Sudowrite','소설 특화 AI. 초고 생성, 장면 확장, 원고를 읽는 피드백 채팅','유료 전용, 영어 중심, 문장 생성 위주'],['ProWritingAid','문법·스타일 교정, 글쓰기 리포트, 구조 피드백','영어 중심, 교정·분석 위주'],['iA Writer · Ulysses','여백과 타이포 중심의 집중형 에디터','AI 합평·학습 기능 없음'],['국내 AI 글쓰기 도우미류','글 생성, 재작성, 맞춤법 교정','대신 써 주기 중심, 창작 학습 구조 없음']];
